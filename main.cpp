@@ -22,14 +22,16 @@ const char *fragmentShaderSource = "#version 460 core\n"
         "    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
         "}\0";
 
-
 const unsigned int SCR_WIDTH = 800; // unsigned int = only positive numbers
 const unsigned int SCR_HEIGHT = 600;
 
-void framebuffer_size_callback(GLFWwindow *window, int width, int height); // resize window
-
 // function prototype/forward declaration = declaration of function
+void framebuffer_size_callback(GLFWwindow *window, int width, int height); // resize window
 void processInput(GLFWwindow *window);
+
+void setupShaders();
+
+void setupBuffers();
 
 int main() {
     glfwInit();
@@ -53,8 +55,88 @@ int main() {
         return -1;
     }
 
-    // Shaders
-    // Vertex shader, run on each vertex
+    setupShaders();
+    setupBuffers();
+
+    // render loop
+    while (!glfwWindowShouldClose(window)) {
+        processInput(window);
+
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // state-setting function
+        glClear(GL_COLOR_BUFFER_BIT);
+        // uses value from glClearColor, state-using function. state of OpenGL = OpenGL context
+
+        // glDrawArrays(GL_TRIANGLES, 0, 3); // first: starting index of currently bound VAO
+        // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // wireframe mode
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        // we have 6 indices, does indexed drawing and renders vertices from VBO in the order specified in EBO
+
+        glfwPollEvents(); // checks for keyboard input, mouse movement events etc
+        glfwSwapBuffers(window);
+    }
+
+
+    glfwTerminate();
+    return 0;
+}
+
+/**
+ * Vertex Array Object
+ *To use a VAO all you have to do is bind the VAO using glBindVertexArray. From that point on we
+ *should bind/configure the corresponding VBO(s) and attribute pointer(s) and then unbind the VAO
+ *for later use.
+
+ *VAO stores our vertex attribute configuration and which VBO to use. Usually when you have
+ *multiple objects you want to draw, you first generate/configure all the VAOs (and thus the required
+ *VBO and attribute pointers) and store those for later use. The moment we want to draw one of our objects,
+ *we take the corresponding VAO, bind it, then draw the object and unbind the VAO again.
+ */
+
+void setupBuffers() {
+    // three vertices (x, y, z)
+    float vertices[] = {
+        0.5f, 0.5f, 0.0f, // top right
+        0.5f, -0.5f, 0.0f, // bottom right
+        -0.5f, -0.5f, 0.0f, // bottom left
+        -0.5f, 0.5f, 0.0f // top left
+    };
+    unsigned int indices[] = {
+        0, 1, 3, // first triangle
+        1, 2, 3 // second triangle
+    };
+
+    // Vertex Buffer Objects, store vertices in the GPU's memory, can send large batches of data to the GPU at once
+    unsigned int VBO, VAO, EBO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
+
+    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
+    glBindVertexArray(VAO);
+
+    // bind buffer to GL_ARRAY_BUFFER, any buffer calls made on GL_ARRAY_BUFFER will be used to configure currently bound buffer (VBO)
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // indexed drawing, only need to specify unique vertices
+    // The last element buffer object that gets bound while a VAO is bound,
+    // is stored as the VAO's element buffer object. Binding to a VAO then
+    // also automatically binds that EBO.
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    // copy user-defined data into the currently bound buffer
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    // index: attribute location ( layout(location = 0) )
+    // size: number of components for vertex attribute, vec3 so 3 components
+    // stride: each vertex has 3 components that are floats, total bytes in one vertex = how far to next vertex
+    // (void*)0): offset where vertex attribute starts in buffer, data starts from beginning here
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *) 0);
+    glEnableVertexAttribArray(0); // enable vertex attribute with index 0
+    glBindBuffer(GL_ARRAY_BUFFER, 0); // registered in glVertexAttribPointer, can safely unbind
+}
+
+void setupShaders() {
+    // Vertex shader
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER); // shader object, referenced by ID
     glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr); // attach shader source code to shader object
     glCompileShader(vertexShader);
@@ -94,61 +176,8 @@ int main() {
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    // three vertices (x, y, z)
-    float vertices[] = {
-        -0.5f, -0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f,
-        0.0f, 0.5f, 0.0f
-    };
-
-    // Vertex Buffer Objects, store vertices in the GPU's memory, can send large batches of data to the GPU at once
-    unsigned int VBO, VAO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-
-    /**
-     * Vertex Array Object
-     *To use a VAO all you have to do is bind the VAO using glBindVertexArray. From that point on we
-     *should bind/configure the corresponding VBO(s) and attribute pointer(s) and then unbind the VAO
-     *for later use.
-
-     *VAO stores our vertex attribute configuration and which VBO to use. Usually when you have
-     *multiple objects you want to draw, you first generate/configure all the VAOs (and thus the required
-     *VBO and attribute pointers) and store those for later use. The moment we want to draw one of our objects,
-     *we take the corresponding VAO, bind it, then draw the object and unbind the VAO again.
-     */
-
-    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-    glBindVertexArray(VAO);
-
-    // bind buffer to GL_ARRAY_BUFFER, any buffer calls made on GL_ARRAY_BUFFER will be used to configure currently bound buffer (VBO)
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    // copy user-defined data into the currently bound buffer
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    // index: attribute location ( layout(location = 0) )
-    // size: number of components for vertex attribute, vec3 so 3 components
-    // stride: each vertex has 3 components that are floats, how many bytes between consecutive vertex attributes
-    // (void*)0): offset where vertex attribute starts in buffer, data starts from beginning here
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *) 0);
-    glEnableVertexAttribArray(0); // disabled by default
-    glBindBuffer(GL_ARRAY_BUFFER, 0); // registered in glVertexAttribPointer, can safely unbind
-
-    // render loop
-    while (!glfwWindowShouldClose(window)) {
-        processInput(window);
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // state-setting function
-        glClear(GL_COLOR_BUFFER_BIT);
-        // uses value from glClearColor, state-using function. state of OpenGL = OpenGL context
-        glUseProgram(shaderProgram);
-        // Every shader and rendering call after glUseProgram will now use this program object (and thus the shaders).
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-        glfwPollEvents(); // checks for keyboard input, mouse movement events etc
-        glfwSwapBuffers(window);
-    }
-    glfwTerminate();
-    return 0;
+    // Every shader and rendering call after glUseProgram will now use this program object (and thus the shaders).
+    glUseProgram(shaderProgram);
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
