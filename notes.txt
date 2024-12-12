@@ -1,0 +1,18 @@
+Vertex Array Objects (VAO):
+To use a VAO all you have to do is bind the VAO using glBindVertexArray. From that point on we
+should bind/configure the corresponding VBO(s) and attribute pointer(s) and then unbind the VAO
+for later use.
+
+VAO stores our vertex attribute configuration and which VBO to use. Usually when you have
+multiple objects you want to draw, you first generate/configure all the VAOs (and thus the required
+VBO and attribute pointers) and store those for later use. The moment we want to draw one of our objects,
+we take the corresponding VAO, bind it, then draw the object and unbind the VAO again.
+
+Element Buffer Objects (EBO):
+indexed drawing, only need to specify unique vertices.
+The last element buffer object that gets bound while a VAO is bound,
+is stored as the VAO's element buffer object. Binding to a VAO then
+also automatically binds that EBO.
+
+
+
