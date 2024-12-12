@@ -21,6 +21,13 @@ const char *fragmentShaderSource = "#version 460 core\n"
         "    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
         "}\0";
 
+const char *fragmentShaderSource2 = "#version 460 core\n"
+        "out vec4 FragColor;\n"
+        "void main()\n"
+        "{\n"
+        "    FragColor = vec4(1.0f, 1.0f, 0.0f, 1.0f);\n"
+        "}\0";
+
 const unsigned int SCR_WIDTH = 1000; // unsigned int = only positive numbers
 const unsigned int SCR_HEIGHT = 600;
 
@@ -32,6 +39,7 @@ void setupShaders();
 void setupBuffers();
 
 GLuint VBO[2], VAO[2], EBO;
+GLuint shaderProgramOrange, shaderProgramYellow;
 
 int main() {
     glfwInit();
@@ -65,13 +73,14 @@ int main() {
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // state-setting function
         glClear(GL_COLOR_BUFFER_BIT);
         // uses value from glClearColor, state-using function. state of OpenGL = OpenGL context
+
+        glUseProgram(shaderProgramOrange);
         glBindVertexArray(VAO[0]);
         glDrawArrays(GL_TRIANGLES, 0, 3); // first: starting index of currently bound VAO, only vertices
-        glEnableVertexAttribArray(0);
 
+        glUseProgram(shaderProgramYellow);
         glBindVertexArray(VAO[1]);
         glDrawArrays(GL_TRIANGLES, 0, 3);
-        glEnableVertexAttribArray(0); // new VAO object = need to bind again!
 
         // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // wireframe mode
 
@@ -115,14 +124,14 @@ void setupBuffers() {
     glBindBuffer(GL_ARRAY_BUFFER, VBO[0]); // bind VBO buffer to GL_ARRAY_BUFFER, any buffer calls made on GL_ARRAY_BUFFER will be used to configure currently bound buffer (VBO)
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *) 0);
-    // glEnableVertexAttribArray(0); // enable once for attribute
+    glEnableVertexAttribArray(0); // enable once for attribute
 
     // SETTING UP VAO[1] and VBO[1]
     glBindVertexArray(VAO[1]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[1]); // bind VBO buffer to GL_ARRAY_BUFFER, any buffer calls made on GL_ARRAY_BUFFER will be used to configure currently bound buffer (VBO)
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *) 0);
-    //glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(0); // new VAO object = need to bind again!
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); // copy user-defined data into the currently bound buffer
@@ -146,10 +155,15 @@ void setupShaders() {
         std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << "\n";
     }
 
-    // Fragment shader
+    // Fragment shader 1
     GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
     glCompileShader(fragmentShader);
+
+    // Fragment shader 2
+    GLuint fragmentShader2 = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader2, 1, &fragmentShaderSource2, nullptr);
+    glCompileShader(fragmentShader2);
 
     glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
     if (!success) {
@@ -157,14 +171,22 @@ void setupShaders() {
         std::cout << "ERROR::SHADER::FRAGMENT::COMPILATON_FAILED\n" << infoLog << "\n";
     }
 
-    GLuint shaderProgram = glCreateProgram(); // object, final linked version of multiple shaders combined
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram); // link all attached shaders in one final shader program object
+    // shader 1
+    shaderProgramOrange = glCreateProgram(); // object, final linked version of multiple shaders combined
+    glAttachShader(shaderProgramOrange, vertexShader);
+    glAttachShader(shaderProgramOrange, fragmentShader);
+    glLinkProgram(shaderProgramOrange); // link all attached shaders in one final shader program object
 
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    // shader 2
+    shaderProgramYellow = glCreateProgram();
+    glAttachShader(shaderProgramYellow, vertexShader);
+    glAttachShader(shaderProgramYellow, fragmentShader2);
+    glLinkProgram(shaderProgramYellow);
+
+
+    glGetProgramiv(shaderProgramOrange, GL_LINK_STATUS, &success);
     if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, nullptr, infoLog);
+        glGetProgramInfoLog(shaderProgramOrange, 512, nullptr, infoLog);
         std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << "\n";
     }
 
@@ -173,7 +195,7 @@ void setupShaders() {
     glDeleteShader(fragmentShader);
 
     // Every shader and rendering call after glUseProgram will now use this program object (and thus the shaders).
-    glUseProgram(shaderProgram);
+    // glUseProgram(shaderProgram);
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {

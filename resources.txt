@@ -4,3 +4,6 @@ https://learnopengl.com
 
 C++:
 https://www.learncpp.com/
+
+misc:
+https://www.rapidtables.com/convert/color/hex-to-rgb.html
