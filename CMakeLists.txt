@@ -13,7 +13,9 @@ find_package(glfw3 3.3 REQUIRED)
 
 add_executable(opengl_project
         main.cpp
-        glad/glad.c)
+        glad/glad.c
+        shaders/shader.h
+        shaders/shader.cpp)
 
 target_include_directories(opengl_project PRIVATE
         ${CMAKE_SOURCE_DIR}

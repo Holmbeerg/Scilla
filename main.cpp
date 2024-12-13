@@ -1,12 +1,14 @@
-#include "glad/glad.h"
+#include <cmath>
+#include <complex>
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <shaders/shader.h>
 
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <filesystem>
-
 
 constexpr unsigned int SCR_WIDTH = 1000; // unsigned int = only positive numbers, constexpr = known at compile time
 constexpr unsigned int SCR_HEIGHT = 600;
@@ -18,8 +20,9 @@ void processInput(GLFWwindow *window);
 void setupShaders();
 void setupBuffers();
 
+Shader ourShader1; // added default constructor to shader class
+Shader ourShader2;
 GLuint VBO[2], VAO[2], EBO;
-GLuint shaderProgramOrange, shaderProgramYellow;
 
 int main() {
     glfwInit();
@@ -46,22 +49,31 @@ int main() {
     setupShaders();
     setupBuffers();
 
-
     // render loop
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
-
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // state-setting function
         glClear(GL_COLOR_BUFFER_BIT);
         // uses value from glClearColor, state-using function. state of OpenGL = OpenGL context
-
-        glUseProgram(shaderProgramOrange);
+        const float timeValue = glfwGetTime();
+        const float greenValue = std::sin(timeValue) / 2.0f + 0.5f;
+        glm::vec4 color(0.0f, greenValue, 0.0f, 1.0f);
+        // glUseProgram(shaderProgram1);
+        ourShader1.use();
+        //ourShader1.setVec4("ourColor", color);
         glBindVertexArray(VAO[0]);
         glDrawArrays(GL_TRIANGLES, 0, 3); // first: starting index of currently bound VAO, only vertices
 
-        glUseProgram(shaderProgramYellow);
+        ourShader2.use();
+        // glUseProgram(shaderProgram2);
+        ourShader2.setVec4("ourColor", color);
         glBindVertexArray(VAO[1]);
         glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        // const int vertexColorLocation = glGetUniformLocation(shaderProgram2, "ourColor");
+        // glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f); // set a uniform value of currently active shader program
+
+
 
         // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // wireframe mode
 
@@ -77,18 +89,19 @@ int main() {
 
 void setupBuffers() {
     // three vertices (x, y, z)
-    float vertices[] = {
-        0.5f, 0.5f, 0.0f, // top right
-        0.5f, -0.5f, 0.0f, // bottom right
-        -0.5f, -0.5f, 0.0f, // bottom left
+    constexpr float vertices[] = {
+        0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // top right
+        0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // bottom right
+        -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f // bottom left
     };
 
-    float vertices2[] = {
-        -0.5f, 0.0f, 0.0f, // top left
-        -0.5f, -0.5f, 0.0f, // bottom left
-        -1.0f, -0.5f, 0.0f, // top right
+    constexpr float vertices2[] = {
+        -0.5f,  0.0f, 0.0f, 0.0f, 0.0f, 1.0f, // top left (blue)
+        -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom left (blue)
+        -1.0f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f  // top right (blue)
     };
-    unsigned int indices[] = {
+
+    const unsigned int indices[] = {
         0, 1, 3, // first triangle
         1, 2, 3, // second triangle
     };
@@ -104,15 +117,23 @@ void setupBuffers() {
     glBindVertexArray(VAO[0]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[0]); // bind VBO buffer to GL_ARRAY_BUFFER, any buffer calls made on GL_ARRAY_BUFFER will be used to configure currently bound buffer (VBO)
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *) 0);
+    // position
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *) 0); // stride 6*float=24bytes
     glEnableVertexAttribArray(0); // enable once for attribute
+    // color
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *) (3 * sizeof(float))); // color attribute starts after position data with 3 components
+    glEnableVertexAttribArray(1);
 
     // SETTING UP VAO[1] and VBO[1]
     glBindVertexArray(VAO[1]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[1]); // bind VBO buffer to GL_ARRAY_BUFFER, any buffer calls made on GL_ARRAY_BUFFER will be used to configure currently bound buffer (VBO)
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *) 0);
+    // position
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *) 0);
     glEnableVertexAttribArray(0); // new VAO object = need to bind again!
+    // color
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *) (3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); // copy user-defined data into the currently bound buffer
@@ -121,87 +142,10 @@ void setupBuffers() {
     glBindBuffer(GL_ARRAY_BUFFER, 0); // registered in glVertexAttribPointer, can safely unbind
 }
 
-std::string loadShaderFromFile(const std::string& filePath) { // filePath reference to a std::string object, const = cant modify original string object
-    std::ifstream shaderFile; // input file stream
-    std::stringstream shaderStream; // store data in memory as string
-
-    shaderFile.open(filePath);
-    if (!shaderFile.is_open()) {
-        std::cerr << "Error: Unable to open file " << filePath << std::endl; //cerr: standard error stream
-        return "";
-    }
-    shaderStream << shaderFile.rdbuf(); // <<: stream insertion operator, insert data into streams
-    shaderFile.close();
-    return shaderStream.str();
-}
-
-
 void setupShaders() {
     const std::string shaderBasePath = "/home/holmberg/development/CLionProjects/OpenGL/shaders/";
-    std::string vertexShaderCode = loadShaderFromFile(shaderBasePath + "vertex_shader.glsl");
-    std::string fragmentShaderCode = loadShaderFromFile(shaderBasePath + "fragment_shader.glsl");
-    std::string fragmentShaderCode2 = loadShaderFromFile(shaderBasePath + "fragment_shader2.glsl");
-
-    const char* vertexShaderSource = vertexShaderCode.c_str();
-    const char* fragmentShaderSource = fragmentShaderCode.c_str();
-    const char* fragmentShaderSource2 = fragmentShaderCode2.c_str();
-
-
-    // Vertex shader
-    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER); // shader object, referenced by ID
-    glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr); // attach shader source code to shader object
-    glCompileShader(vertexShader);
-
-    GLint success;
-    char infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-
-    if (!success) {
-        glGetShaderInfoLog(vertexShader, 512, nullptr, infoLog);
-        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << "\n";
-    }
-
-    // Fragment shader 1
-    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
-    glCompileShader(fragmentShader);
-
-    // Fragment shader 2
-    GLuint fragmentShader2 = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader2, 1, &fragmentShaderSource2, nullptr);
-    glCompileShader(fragmentShader2);
-
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(fragmentShader, 512, nullptr, infoLog);
-        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATON_FAILED\n" << infoLog << "\n";
-    }
-
-    // shader 1
-    shaderProgramOrange = glCreateProgram(); // object, final linked version of multiple shaders combined
-    glAttachShader(shaderProgramOrange, vertexShader);
-    glAttachShader(shaderProgramOrange, fragmentShader);
-    glLinkProgram(shaderProgramOrange); // link all attached shaders in one final shader program object
-
-    // shader 2
-    shaderProgramYellow = glCreateProgram();
-    glAttachShader(shaderProgramYellow, vertexShader);
-    glAttachShader(shaderProgramYellow, fragmentShader2);
-    glLinkProgram(shaderProgramYellow);
-
-
-    glGetProgramiv(shaderProgramOrange, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shaderProgramOrange, 512, nullptr, infoLog);
-        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << "\n";
-    }
-
-    // no longer need shader objects after linking
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
-    // Every shader and rendering call after glUseProgram will now use this program object (and thus the shaders).
-    // glUseProgram(shaderProgram);
+    ourShader1 = Shader(shaderBasePath + "vertex_shader.glsl", shaderBasePath + "fragment_shader.glsl");
+    ourShader2 = Shader(shaderBasePath + "vertex_shader.glsl", shaderBasePath + "fragment_shader2.glsl");
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
