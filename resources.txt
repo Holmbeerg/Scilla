@@ -7,3 +7,6 @@ https://www.learncpp.com/
 
 misc:
 https://www.rapidtables.com/convert/color/hex-to-rgb.html
+
+CMake:
+Project didn't build: delete cmake-build-debug, delete .idea, close project and open from menu

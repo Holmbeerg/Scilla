@@ -1,35 +1,15 @@
-#include <glad/glad.h>
+#include "glad/glad.h"
 #include <GLFW/glfw3.h>
 
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <filesystem>
 
-// declares an input attribute called aPos which holds the 3D coordinates (position) of the vertex.
-// the location = 0 part specifies that this attribute will be bound to location 0.
-const char *vertexShaderSource = "#version 460 core\n"
-        "layout (location = 0) in vec3 aPos;\n"
-        "void main()\n"
-        "{\n"
-        "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-        "}\0";
 
-// only requires one output variable, vec4 defines final color output we should calculate ourselves
-// red, green, blue, alpha (opacity) where 1 = opaque
-const char *fragmentShaderSource = "#version 460 core\n"
-        "out vec4 FragColor;\n"
-        "void main()\n"
-        "{\n"
-        "    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-        "}\0";
-
-const char *fragmentShaderSource2 = "#version 460 core\n"
-        "out vec4 FragColor;\n"
-        "void main()\n"
-        "{\n"
-        "    FragColor = vec4(1.0f, 1.0f, 0.0f, 1.0f);\n"
-        "}\0";
-
-const unsigned int SCR_WIDTH = 1000; // unsigned int = only positive numbers
-const unsigned int SCR_HEIGHT = 600;
+constexpr unsigned int SCR_WIDTH = 1000; // unsigned int = only positive numbers, constexpr = known at compile time
+constexpr unsigned int SCR_HEIGHT = 600;
 
 // function prototype/forward declaration = declaration of function
 void framebuffer_size_callback(GLFWwindow *window, int width, int height); // resize window
@@ -49,8 +29,8 @@ int main() {
     //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
 
-    GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "OpenGL", NULL, NULL);
-    if (window == NULL) {
+    GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "OpenGL", nullptr, nullptr);
+    if (window == nullptr) {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
         return -1;
@@ -65,6 +45,7 @@ int main() {
 
     setupShaders();
     setupBuffers();
+
 
     // render loop
     while (!glfwWindowShouldClose(window)) {
@@ -140,7 +121,32 @@ void setupBuffers() {
     glBindBuffer(GL_ARRAY_BUFFER, 0); // registered in glVertexAttribPointer, can safely unbind
 }
 
+std::string loadShaderFromFile(const std::string& filePath) { // filePath reference to a std::string object, const = cant modify original string object
+    std::ifstream shaderFile; // input file stream
+    std::stringstream shaderStream; // store data in memory as string
+
+    shaderFile.open(filePath);
+    if (!shaderFile.is_open()) {
+        std::cerr << "Error: Unable to open file " << filePath << std::endl; //cerr: standard error stream
+        return "";
+    }
+    shaderStream << shaderFile.rdbuf(); // <<: stream insertion operator, insert data into streams
+    shaderFile.close();
+    return shaderStream.str();
+}
+
+
 void setupShaders() {
+    const std::string shaderBasePath = "/home/holmberg/development/CLionProjects/OpenGL/shaders/";
+    std::string vertexShaderCode = loadShaderFromFile(shaderBasePath + "vertex_shader.glsl");
+    std::string fragmentShaderCode = loadShaderFromFile(shaderBasePath + "fragment_shader.glsl");
+    std::string fragmentShaderCode2 = loadShaderFromFile(shaderBasePath + "fragment_shader2.glsl");
+
+    const char* vertexShaderSource = vertexShaderCode.c_str();
+    const char* fragmentShaderSource = fragmentShaderCode.c_str();
+    const char* fragmentShaderSource2 = fragmentShaderCode2.c_str();
+
+
     // Vertex shader
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER); // shader object, referenced by ID
     glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr); // attach shader source code to shader object
@@ -206,3 +212,4 @@ void processInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 }
+

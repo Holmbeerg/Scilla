@@ -1,12 +1,29 @@
-cmake_minimum_required(VERSION 3.30)
+cmake_minimum_required(VERSION 3.10)
 project(opengl_project)
-find_package(glfw3 3.4 REQUIRED)
+
+# Explicitly set the include directories
+include_directories(
+        ${CMAKE_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/glad
+        ${OPENGL_INCLUDE_DIRS}
+)
+
+find_package(OpenGL REQUIRED)
+find_package(glfw3 3.3 REQUIRED)
+
 add_executable(opengl_project
         main.cpp
         glad/glad.c)
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+target_include_directories(opengl_project PRIVATE
+        ${CMAKE_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/glad
+)
+
 target_link_libraries(opengl_project
         glfw
-        GL
-)
-set(CMAKE_CXX_STANDARD 26)
+        OpenGL::GL
+        dl)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
