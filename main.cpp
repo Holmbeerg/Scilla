@@ -48,7 +48,6 @@ int main() {
 
     setupShaders();
     setupBuffers();
-
     // render loop
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
@@ -57,16 +56,19 @@ int main() {
         // uses value from glClearColor, state-using function. state of OpenGL = OpenGL context
         const float timeValue = glfwGetTime();
         const float greenValue = std::sin(timeValue) / 2.0f + 0.5f;
+        const float offset = 0.5f + std::sin(timeValue) / 2;
+
         glm::vec4 color(0.0f, greenValue, 0.0f, 1.0f);
-        // glUseProgram(shaderProgram1);
+        glm::vec4 translation(offset, 0.0f, 0.0f, 0.0f);
+
         ourShader1.use();
         //ourShader1.setVec4("ourColor", color);
         glBindVertexArray(VAO[0]);
         glDrawArrays(GL_TRIANGLES, 0, 3); // first: starting index of currently bound VAO, only vertices
 
         ourShader2.use();
-        // glUseProgram(shaderProgram2);
         ourShader2.setVec4("ourColor", color);
+        ourShader2.setVec4("translation", translation);
         glBindVertexArray(VAO[1]);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
@@ -144,8 +146,8 @@ void setupBuffers() {
 
 void setupShaders() {
     const std::string shaderBasePath = "/home/holmberg/development/CLionProjects/OpenGL/shaders/";
-    ourShader1 = Shader(shaderBasePath + "vertex_shader.glsl", shaderBasePath + "fragment_shader.glsl");
-    ourShader2 = Shader(shaderBasePath + "vertex_shader.glsl", shaderBasePath + "fragment_shader2.glsl");
+    ourShader1 = Shader(shaderBasePath + "vertex_shader.vert", shaderBasePath + "fragment_shader.frag");
+    ourShader2 = Shader(shaderBasePath + "vertex_shader.vert", shaderBasePath + "fragment_shader2.frag");
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
