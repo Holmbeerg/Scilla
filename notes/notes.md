@@ -28,6 +28,8 @@ During rasterization, the graphics pipeline converts vector graphics (triangles)
 
 The rasterization stage usually results in a lot more fragments than vertices specified. The rasterizer determines the position of those fragments based on where they reside on the triangle. Based on this position, it interpolates all the fragment shader's input variables.
 
+Interpolation is the act of calculating smooth, intermediate values (data points) between known points based on their relative positions. In graphics, it involves determining the value of a specific attribute (like color, texture coordinates, or normals) for each fragment within a primitive by mathematically blending the values from the primitive's vertices
+
 Interpolation in OpenGL occurs after the vertex shader and before the fragment shader, during the rasterization stage. When you pass data from the 
 vertex shader to the fragment shader, like texture coordinates, OpenGL performs interpolation based on the barycentric coordinates of the fragments.
 
@@ -45,8 +47,8 @@ Geometry shader is completely optional. Tesselation is also optional.
 ---
 
 ## **Sampling**
-Retrieving texture color by using texture coordinates. In 2D texture images, texture coordinates range from 0 to 1 in both the y and x-axis, with `(0, 0)` being the bottom-left corner.  
-Pass 3 texture coordinates, and the fragment shader then interpolates all the texture coordinates for each fragment.
+Retrieving texture color by using interpolated texture coordinates. In 2D texture images, texture coordinates range from 0 to 1 in both the y and x-axis, with `(0, 0)` being the bottom-left corner.  
+Pass 3 texture coordinates as a vertex attribute to the vertex shader. The output of these then get interpolated (if you dont change something with interpolation qualifier) during rasterization and the fragment shader receives the interpolated texture coordinates.
 
 ---
 
@@ -57,7 +59,7 @@ Pass 3 texture coordinates, and the fragment shader then interpolates all the te
 ---
 
 ## **Texture Filtering**
-Texture coordinates do not depend on resolution but can be any floating point value. This means that OpenGL has to figure out which texture pixel (**Texel**) to map the texture coordinate to. This is especially important with very large objects with low-resolution textures. This is where **texture filtering** comes in.
+Texture coordinates do not depend on resolution but can be any floating point value. This means that OpenGL has to figure out which texture pixel (**Texel**) to map the (interpolated) texture coordinate to. This is especially important with very large objects with low-resolution textures. This is where **texture filtering** comes in.
 
 ### **Options:**
 - **GL_NEAREST / Nearest Neighbour / Point Filtering:**  
