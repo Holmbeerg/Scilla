@@ -51,20 +51,20 @@ int main() {
     setupShaders();
     setupBuffers();
     createAndGenerateTexture();
+
+    shaderProgram2.use();
+    shaderProgram2.setInt("texture1", 0); // need to specify which texture unit each uniform sampler (sample2D) belongs to
+    shaderProgram2.setInt("texture2", 1);
     // render loop
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // state-setting function
         glClear(GL_COLOR_BUFFER_BIT);
         // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // wireframe mode
-        // shaderProgram1.use();
-        shaderProgram2.use();
+
         glBindVertexArray(VAO[1]);
         //glDrawArrays(GL_TRIANGLES, 0, 4); // first: starting index of currently bound VAO, count of vertices
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr); // 6 indices used!
-
-        // glBindVertexArray(VAO[1]);
-        // glDrawArrays(GL_TRIANGLES, 0, 4);
 
         glfwPollEvents(); // checks for keyboard input, mouse movement events etc
         glfwSwapBuffers(window);
@@ -76,27 +76,40 @@ int main() {
 void createAndGenerateTexture() {
     GLint width, height, nrChannels;
     // Takes image location and fills parameters with the images width, height and number of color channels (RGB = 3, RGBA = 4), height and width needed to generate textures
+    stbi_set_flip_vertically_on_load(true); // OpenGL expects the 0.0 coordinate on the y-axis to be on the bottom side of the image, but images usually have 0.0 at the top of the y-axis
     unsigned char *data = stbi_load("/home/holmberg/development/CLionProjects/OpenGL/textures/container.jpg", &width, &height, &nrChannels, 0);
+    unsigned char *data2 = stbi_load("/home/holmberg/development/CLionProjects/OpenGL/textures/awesomeface.png", &width, &height, &nrChannels, 0);
 
-    if (!data) {
+    if (!data || !data2) {
         std::cerr << "Failed to load texture" << std::endl;
         return;
     }
 
-    GLuint textureID; // Texture object
-    glGenTextures(1, &textureID);
-    glBindTexture(GL_TEXTURE_2D, textureID); // Bind the texture object to the texture target GL_TEXTURE_2D
+    // Textures
+    unsigned int texture1, texture2; // Texture object
+    // Texture 1
+    glGenTextures(1, &texture1);
+    glActiveTexture(GL_TEXTURE0); // set active Texture Unit to GL_TEXTURE0
+    glBindTexture(GL_TEXTURE_2D, texture1); // Bind the texture object to the texture target GL_TEXTURE_2D
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    // Specify texture parameters
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D); // generate all required mipmaps for currently bound texture
+    stbi_image_free(data); // free data to free up memory
 
-    // Free data to avoid memory leaks
-    stbi_image_free(data);
+    // Texture 2
+    glGenTextures(1, &texture2);
+    glActiveTexture(GL_TEXTURE1); // set active Texture Unit to GL_TEXTURE1
+    glBindTexture(GL_TEXTURE_2D, texture2);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // Specify texture parameters, If we load a PNG image we need to specify that image contains ALPHA channel (transparency) with GL_RGBA
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data2);
+    stbi_image_free(data2);
+    glGenerateMipmap(GL_TEXTURE_2D); // generate all required mipmaps for currently bound texture
 }
 
 void setupBuffers() {

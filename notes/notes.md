@@ -50,6 +50,16 @@ Geometry shader is completely optional. Tesselation is also optional.
 Retrieving texture color by using interpolated texture coordinates. In 2D texture images, texture coordinates range from 0 to 1 in both the y and x-axis, with `(0, 0)` being the bottom-left corner.  
 Pass 3 texture coordinates as a vertex attribute to the vertex shader. The output of these then get interpolated (if you dont change something with interpolation qualifier) during rasterization and the fragment shader receives the interpolated texture coordinates.
 
+GLSL has built-in function **texture** function to sample a color from a texture. Takes a texture sampler (like sampler2D) as first argument
+and corresponding texture coordinates as second.
+
+Example:
+```
+void main() {
+    FragColor = texture(ourTexture, TexCoord);
+}
+```
+
 ---
 
 ## **Texture Wrapping**
@@ -78,6 +88,39 @@ Texture filtering can also be set for **magnifying** and **minifying** operation
 
 ---
 
+# **Texture Units**
+With `glUniform1i` we can assign a **location** value to the texture sampler so we can set multiple textures at once
+in a fragment shader. The **location** of a texture, can think like a container, is more commonly known as a **Texture Unit**. Default texture unit 
+is 0 which is the default active texture. Not all graphics drivers assign a default texture. 
+
+Main purpose of **Texture Units** is to allow us to use more than one texture in a shader. By assigning **Texture Units** (locations) to the 
+samplers, we can bind to multiple textures at once, as long as we activate the corresponding texture unit first.
+
+Can activate **Texture Units** like this:
+```
+glActiveTexture(GL_TEXTURE0); // activate the texture unit first before binding texture
+glBindTexture(GL_TEXTURE_2D, texture);
+```
+`GL_TEXTURE0` is always active by default. OpenGL should have 16 **Texture Units** we can use. If we want to add another texture
+we need to add 1 more sampler in the fragment shader.
+```
+#version 460 core
+...
+
+uniform sampler2D texture1;
+uniform sampler2D texture2;
+
+void main()
+{
+    FragColor = mix(texture(texture1, TexCoord), texture(texture2, TexCoord), 0.2);
+}
+
+```
+
+**mix** is a built-in GLSL function to mix textures. Takes two textures with texture coordinate and **linearly interpolates** between them
+based on the third argument. The third argument decide the specific values. If last value is 0.2, the final color will be a mix
+of **80%** of the first value and **20%** of the second. If its 1, it will be **0%** of the first value and **100%** of the second.
+---
 # **Mipmaps**
 ### **Example Issue:**
 Objects far away have the same high-resolution texture as objects close by. 
