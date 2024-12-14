@@ -21,6 +21,7 @@ void processInput(GLFWwindow *window);
 void setupShaders();
 void setupBuffers();
 void createAndGenerateTexture();
+void interpolationValueControls();
 
 Shader shaderProgram1; // added default constructor to shader class
 Shader shaderProgram2;
@@ -55,6 +56,10 @@ int main() {
     shaderProgram2.use();
     shaderProgram2.setInt("texture1", 0); // need to specify which texture unit each uniform sampler (sample2D) belongs to
     shaderProgram2.setInt("texture2", 1);
+    if(glfwGetKey(window,GLFW_KEY_DOWN)) {
+        std::cout << "Down key pressed" << std::endl;
+
+    }
     // render loop
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
@@ -91,21 +96,22 @@ void createAndGenerateTexture() {
     glGenTextures(1, &texture1);
     glActiveTexture(GL_TEXTURE0); // set active Texture Unit to GL_TEXTURE0
     glBindTexture(GL_TEXTURE_2D, texture1); // Bind the texture object to the texture target GL_TEXTURE_2D
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
     stbi_image_free(data); // free data to free up memory
 
     // Texture 2
     glGenTextures(1, &texture2);
     glActiveTexture(GL_TEXTURE1); // set active Texture Unit to GL_TEXTURE1
     glBindTexture(GL_TEXTURE_2D, texture2);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // Mipmap
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     // Specify texture parameters, If we load a PNG image we need to specify that image contains ALPHA channel (transparency) with GL_RGBA
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data2);
     stbi_image_free(data2);
@@ -125,7 +131,7 @@ void setupBuffers() {
 
     constexpr float vertices2[] = {
         // positions          // colors           // texture coords
-        0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
+        0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0, 1.0f, // top right
         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left
@@ -188,8 +194,39 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
+
+float currentInterpolationValue = 0.2f;
 void processInput(GLFWwindow *window) {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
+    }
+    if (currentInterpolationValue >= 1.0f) {
+        currentInterpolationValue = 1.0f;
+
+    } else if (currentInterpolationValue <= 0.0f) {
+        currentInterpolationValue = 0.0f;
+    }
+
+    shaderProgram2.setFloat("interpolationValue", currentInterpolationValue);
+    static bool isUpPressed = false;
+
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+        if (!isUpPressed) {
+            currentInterpolationValue += 0.1f;
+            isUpPressed = true;
+        }
+    } else if (isUpPressed && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_RELEASE) {
+        isUpPressed = false;
+    }
+
+    static bool isKeyDown = false;
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+        if (!isKeyDown) {
+            currentInterpolationValue -= 0.1f;
+            isKeyDown = true;
+        }
+    } else if (isKeyDown && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_RELEASE) {
+        isKeyDown = false;
+    }
 }
 

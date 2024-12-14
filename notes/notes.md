@@ -66,6 +66,18 @@ void main() {
 - **`s`, `t` axis = x, y (width, height)**
 - **`r` (z)** if using 3D texture.
 
+If we specify coordinates for the texture outside the range **(0, 0)** to **(1, 1)** the texture will wrap. The result of this depends
+on the wrapping method specified for the texture, for example with`glTexParameteri`
+
+Example:
+```
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+```
+`GL_REPEAT`is the default behavior for textures.
+
+![](https://learnopengl.com/img/getting-started/texture_wrapping.png)
+
 ---
 
 ## **Texture Filtering**
@@ -83,9 +95,12 @@ The closer a texel's center is to the coordinate, the more that texel's color co
 
 ![](https://learnopengl.com/img/getting-started/texture_filtering.png)
 
-Texture filtering can also be set for **magnifying** and **minifying** operations (scaling up or downwards):
-- `GL_TEXTURE_MIN_FILTER`, `GL_TEXTURE_MAG_FILTER`
-
+We can set texture filtering for **magnifying** and **minifying** operations (when scaling up or downwards).
+In this example we use nearest neighbour for downscaling and linear for upscaling.
+```
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, NEAREST)
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+```
 ---
 
 # **Texture Units**
