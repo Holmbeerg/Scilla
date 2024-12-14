@@ -12,6 +12,7 @@ TeX and LaTeX syntax math supported with dollarsigns
 To use a VAO all you have to do is bind the VAO using `glBindVertexArray`. From that point on we should bind/configure the corresponding VBO(s) and attribute pointer(s) and then unbind the VAO for later use.
 
 VAO stores our vertex attribute configuration and which VBO to use. Usually when you have multiple objects you want to draw, you first generate/configure all the VAOs (and thus the required VBO and attribute pointers) and store those for later use. The moment we want to draw one of our objects, we take the corresponding VAO, bind it, then draw the object and unbind the VAO again.
+
 ![](https://learnopengl.com/img/getting-started/vertex_array_objects.png)
 ---
 
