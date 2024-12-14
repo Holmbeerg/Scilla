@@ -9,6 +9,7 @@
 #include <sstream>
 #include <string>
 #include <filesystem>
+#include <stb/stb_image.h>
 
 constexpr unsigned int SCR_WIDTH = 1000; // unsigned int = only positive numbers, constexpr = known at compile time
 constexpr unsigned int SCR_HEIGHT = 600;
@@ -19,9 +20,10 @@ void processInput(GLFWwindow *window);
 
 void setupShaders();
 void setupBuffers();
+void createAndGenerateTexture();
 
-Shader ourShader1; // added default constructor to shader class
-Shader ourShader2;
+Shader shaderProgram1; // added default constructor to shader class
+Shader shaderProgram2;
 GLuint VBO[2], VAO[2], EBO;
 
 int main() {
@@ -48,39 +50,21 @@ int main() {
 
     setupShaders();
     setupBuffers();
+    createAndGenerateTexture();
     // render loop
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // state-setting function
         glClear(GL_COLOR_BUFFER_BIT);
-        // uses value from glClearColor, state-using function. state of OpenGL = OpenGL context
-        const float timeValue = glfwGetTime();
-        const float greenValue = std::sin(timeValue) / 2.0f + 0.5f;
-        const float offset = 0.5f + std::sin(timeValue) / 2;
-
-        glm::vec4 color(0.0f, greenValue, 0.0f, 1.0f);
-        glm::vec4 translation(offset, 0.0f, 0.0f, 0.0f);
-
-        ourShader1.use();
-        //ourShader1.setVec4("ourColor", color);
-        glBindVertexArray(VAO[0]);
-        glDrawArrays(GL_TRIANGLES, 0, 3); // first: starting index of currently bound VAO, only vertices
-
-        ourShader2.use();
-        ourShader2.setVec4("ourColor", color);
-        ourShader2.setVec4("translation", translation);
-        glBindVertexArray(VAO[1]);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-
-        // const int vertexColorLocation = glGetUniformLocation(shaderProgram2, "ourColor");
-        // glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f); // set a uniform value of currently active shader program
-
-
-
         // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // wireframe mode
+        // shaderProgram1.use();
+        shaderProgram2.use();
+        glBindVertexArray(VAO[1]);
+        //glDrawArrays(GL_TRIANGLES, 0, 4); // first: starting index of currently bound VAO, count of vertices
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr); // 6 indices used!
 
-        // we have 6 indices, does indexed drawing and renders vertices from VBO in the order specified in EBO
-        // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        // glBindVertexArray(VAO[1]);
+        // glDrawArrays(GL_TRIANGLES, 0, 4);
 
         glfwPollEvents(); // checks for keyboard input, mouse movement events etc
         glfwSwapBuffers(window);
@@ -89,19 +73,50 @@ int main() {
     return 0;
 }
 
+void createAndGenerateTexture() {
+    GLint width, height, nrChannels;
+    // Takes image location and fills parameters with the images width, height and number of color channels (RGB = 3, RGBA = 4), height and width needed to generate textures
+    unsigned char *data = stbi_load("/home/holmberg/development/CLionProjects/OpenGL/textures/container.jpg", &width, &height, &nrChannels, 0);
+
+    if (!data) {
+        std::cerr << "Failed to load texture" << std::endl;
+        return;
+    }
+
+    GLuint textureID; // Texture object
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID); // Bind the texture object to the texture target GL_TEXTURE_2D
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // Specify texture parameters
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D); // generate all required mipmaps for currently bound texture
+
+    // Free data to avoid memory leaks
+    stbi_image_free(data);
+}
+
 void setupBuffers() {
-    // three vertices (x, y, z)
+    // Three vertices (x, y, z). Vertices = multiple 3D points, vertex = single point
+    // Position, color, texture are vertex attributes
     constexpr float vertices[] = {
-        0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // top right
-        0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // bottom right
-        -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f // bottom left
-    };
+        // positions          // colors           // texture coords
+        0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
+        0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
+       -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
+       -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left
+   };
 
     constexpr float vertices2[] = {
-        -0.5f,  0.0f, 0.0f, 0.0f, 0.0f, 1.0f, // top left (blue)
-        -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom left (blue)
-        -1.0f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f  // top right (blue)
-    };
+        // positions          // colors           // texture coords
+        0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
+        0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f, // bottom right
+       -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f, // bottom left
+       -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left
+   };
 
     const unsigned int indices[] = {
         0, 1, 3, // first triangle
@@ -117,27 +132,33 @@ void setupBuffers() {
     // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
     // SETTING UP VAO[0] and VBO[0]
     glBindVertexArray(VAO[0]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO[0]); // bind VBO buffer to GL_ARRAY_BUFFER, any buffer calls made on GL_ARRAY_BUFFER will be used to configure currently bound buffer (VBO)
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO[0]); // bind VBO buffer object to bind target GL_ARRAY_BUFFER, this VBO is now the active buffer OpenGL will use
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); // add vertices data to bind target
     // position
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *) 0); // stride 6*float=24bytes
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) 0); // stride 8*float=24bytes
     glEnableVertexAttribArray(0); // enable once for attribute
     // color
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *) (3 * sizeof(float))); // color attribute starts after position data with 3 components
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (3 * sizeof(float))); // color attribute starts after position data with 3 components
     glEnableVertexAttribArray(1);
+    // texture position
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
 
     // SETTING UP VAO[1] and VBO[1]
     glBindVertexArray(VAO[1]);
     glBindBuffer(GL_ARRAY_BUFFER, VBO[1]); // bind VBO buffer to GL_ARRAY_BUFFER, any buffer calls made on GL_ARRAY_BUFFER will be used to configure currently bound buffer (VBO)
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
     // position
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *) 0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) 0);
     glEnableVertexAttribArray(0); // new VAO object = need to bind again!
     // color
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *) (3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+    // texture position
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO); // bind ebo to VAO[1]
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); // copy user-defined data into the currently bound buffer
 
     glBindVertexArray(0);
@@ -146,8 +167,8 @@ void setupBuffers() {
 
 void setupShaders() {
     const std::string shaderBasePath = "/home/holmberg/development/CLionProjects/OpenGL/shaders/";
-    ourShader1 = Shader(shaderBasePath + "vertex_shader.vert", shaderBasePath + "fragment_shader.frag");
-    ourShader2 = Shader(shaderBasePath + "vertex_shader.vert", shaderBasePath + "fragment_shader2.frag");
+    shaderProgram1 = Shader(shaderBasePath + "vertex_shader.vert", shaderBasePath + "fragment_shader.frag"); // left triangle
+    shaderProgram2 = Shader(shaderBasePath + "vertex_shader.vert", shaderBasePath + "fragment_shader2.frag"); // right triangle
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {

@@ -3,7 +3,7 @@
 #include <fstream>
 #include <sstream>
 
-Shader::Shader(const std::string& vertexPath, const std::string& fragmentPath) {
+Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath) {
     // Load vertex and fragment shader code
     std::string vertexCode;
     std::string fragmentCode;
@@ -11,8 +11,10 @@ Shader::Shader(const std::string& vertexPath, const std::string& fragmentPath) {
     try {
         std::ifstream fShaderFile;
         std::ifstream vShaderFile;
+
         vShaderFile.open(vertexPath);
         fShaderFile.open(fragmentPath);
+
         std::stringstream vShaderStream, fShaderStream;
 
         vShaderStream << vShaderFile.rdbuf();
@@ -78,7 +80,6 @@ void Shader::setFloat(const std::string &name, const float value) const {
 }
 
 void Shader::setVec4(const std::string &name, const glm::vec4 &value) const {
-    std::cout << "Value: " << value.x << " " << value.y << " " << value.z << " " << value.w << std::endl;
     glUniform4f(glGetUniformLocation(ID, name.c_str()), value.x, value.y, value.z, value.w);
 }
 

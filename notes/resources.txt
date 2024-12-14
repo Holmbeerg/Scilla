@@ -1,6 +1,7 @@
 OpenGL:
 https://registry.khronos.org/OpenGL-Refpages/gl4/
 https://learnopengl.com
+https://open.gl/
 
 C++:
 https://www.learncpp.com/
@@ -9,4 +10,5 @@ misc:
 https://www.rapidtables.com/convert/color/hex-to-rgb.html
 
 CMake:
-Project didn't build: delete cmake-build-debug, delete .idea, close project and open from menu
+https://cliutils.gitlab.io/modern-cmake/README.html
+Project didn't build: delete cmake-build-debug, delete .idea, rebuild

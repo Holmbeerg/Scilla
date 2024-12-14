@@ -15,7 +15,8 @@ add_executable(opengl_project
         main.cpp
         glad/glad.c
         shaders/shader.h
-        shaders/shader.cpp)
+        shaders/shader.cpp
+        stb/stb_image.cpp)
 
 target_include_directories(opengl_project PRIVATE
         ${CMAKE_SOURCE_DIR}
