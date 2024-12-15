@@ -694,27 +694,9 @@ $
 ### Important 
 It is advised to first do scaling operations, then rotations and lastly translations when combining matrices otherwise they may (negatively) affect each other. For example, if you would first do a translation and then scale, the translation vector would also scale!
 
-Running the final transformation matrix on our vector results in the following vector: 
+Running the final transformation matrix on our vector results in the following vector:
 
-$
-\begin{bmatrix}
-2 & 0 & 0 & 1 \\
-0 & 2 & 0 & 2 \\
-0 & 0 & 2 & 3 \\
-0 & 0 & 0 & 1
-\end{bmatrix}.
-\begin{bmatrix}
-x \\
-y \\
-z \\
-1
-\end{bmatrix}=
-\begin{bmatrix}
-2x+1 \\
-2y+2 \\
-2z+3 \\
-1
-\end{bmatrix}
-$
+$ \begin{bmatrix} 2 & 0 & 0 & 1 \\ 0 & 2 & 0 & 2 \\ 0 & 0 & 2 & 3 \\ 0 & 0 & 0 & 1 \end{bmatrix} \begin{bmatrix} x \\ y \\ z \\ 1 \end{bmatrix} = \begin{bmatrix} 2x + 1 \\ 2y + 2 \\ 2z + 3 \\ 1 \end{bmatrix} $
+
 
 Resulting vector is first scaled by two and then translated by (1,2,3).
