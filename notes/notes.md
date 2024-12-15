@@ -696,7 +696,25 @@ It is advised to first do scaling operations, then rotations and lastly translat
 
 Running the final transformation matrix on our vector results in the following vector: 
 
-![](https://latex.codecogs.com/png.image?\dpi{110}\bg{white}$\begin{bmatrix}2&0&0&1\\0&2&0&2\\0&0&2&3\\0&0&0&1\end{bmatrix}.\begin{bmatrix}x\\y\\z\\1\end{bmatrix}=\begin{bmatrix}2x&plus;1\\2y&plus;2\\2z&plus;3\\1\end{bmatrix}$)
-
+$
+\begin{bmatrix}
+2 & 0 & 0 & 1 \\
+0 & 2 & 0 & 2 \\
+0 & 0 & 2 & 3 \\
+0 & 0 & 0 & 1
+\end{bmatrix}.
+\begin{bmatrix}
+x \\
+y \\
+z \\
+1
+\end{bmatrix}=
+\begin{bmatrix}
+2x+1 \\
+2y+2 \\
+2z+3 \\
+1
+\end{bmatrix}
+$
 
 Resulting vector is first scaled by two and then translated by (1,2,3).
