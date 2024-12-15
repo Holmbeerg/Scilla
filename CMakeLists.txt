@@ -12,11 +12,17 @@ find_package(OpenGL REQUIRED)
 find_package(glfw3 3.3 REQUIRED)
 
 add_executable(opengl_project
-        main.cpp
+        src/main.cpp
         glad/glad.c
-        shaders/shader.h
-        shaders/shader.cpp
-        stb/stb_image.cpp)
+        src/shader.h
+        src/shader.cpp
+        stb/stb_image.cpp
+        src/VAO.cpp
+        src/VAO.h
+        src/VBO.cpp
+        src/VBO.h
+        src/EBO.cpp
+        src/EBO.h)
 
 target_include_directories(opengl_project PRIVATE
         ${CMAKE_SOURCE_DIR}

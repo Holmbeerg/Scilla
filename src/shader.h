@@ -2,7 +2,7 @@
 #ifndef SHADER_H // check if SHADER_H has NOT been defined before
 #define SHADER_H // define SHADER_H so its not included again
 
-#include <glad/glad.h> // include glad to get all the required OpenGL headers
+#include <../glad/glad.h>
 
 #include <string>
 #include <fstream>

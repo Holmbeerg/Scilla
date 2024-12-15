@@ -2,14 +2,13 @@
 #include <complex>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <shaders/shader.h>
-
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <filesystem>
 #include <stb/stb_image.h>
+#include "shader.h"
 
 constexpr unsigned int SCR_WIDTH = 1000; // unsigned int = only positive numbers, constexpr = known at compile time
 constexpr unsigned int SCR_HEIGHT = 600;
@@ -82,8 +81,8 @@ void createAndGenerateTexture() {
     GLint width, height, nrChannels;
     // Takes image location and fills parameters with the images width, height and number of color channels (RGB = 3, RGBA = 4), height and width needed to generate textures
     stbi_set_flip_vertically_on_load(true); // OpenGL expects the 0.0 coordinate on the y-axis to be on the bottom side of the image, but images usually have 0.0 at the top of the y-axis
-    unsigned char *data = stbi_load("/home/holmberg/development/CLionProjects/OpenGL/textures/container.jpg", &width, &height, &nrChannels, 0);
-    unsigned char *data2 = stbi_load("/home/holmberg/development/CLionProjects/OpenGL/textures/awesomeface.png", &width, &height, &nrChannels, 0);
+    unsigned char *data = stbi_load("textures/container.jpg", &width, &height, &nrChannels, 0);
+    unsigned char *data2 = stbi_load("textures/awesomeface.png", &width, &height, &nrChannels, 0);
 
     if (!data || !data2) {
         std::cerr << "Failed to load texture" << std::endl;
