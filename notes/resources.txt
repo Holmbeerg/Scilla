@@ -4,6 +4,7 @@ https://learnopengl.com
 https://open.gl/
 https://www.tomdalling.com/blog/modern-opengl/explaining-homogenous-coordinates-and-projective-geometry/
 https://www.youtube.com/@VictorGordan/videos
+https://www.youtube.com/@code-imposter
 
 C++:
 https://www.learncpp.com/
@@ -11,6 +12,8 @@ https://www.learncpp.com/
 misc:
 https://www.rapidtables.com/convert/color/hex-to-rgb.html
 https://www.khanacademy.org/math/linear-algebra/matrix-transformations
+https://youtu.be/rHLEWRxRGiM
+http://matrixmultiplication.xyz/
 
 CMake:
 https://cliutils.gitlab.io/modern-cmake/README.html

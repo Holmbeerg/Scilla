@@ -3,6 +3,9 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -55,10 +58,23 @@ int main() {
     shaderProgram2.use();
     shaderProgram2.setInt("texture1", 0); // need to specify which texture unit each uniform sampler (sample2D) belongs to
     shaderProgram2.setInt("texture2", 1);
-    if(glfwGetKey(window,GLFW_KEY_DOWN)) {
-        std::cout << "Down key pressed" << std::endl;
 
-    }
+    // https://stackoverflow.com/questions/59222806/how-does-glm-handle-translation
+    glm::vec4 vec(1.0f, 0.0f, 0.0f, 1.0f); // define a vector
+    glm::mat4 inputMatrix = glm::mat4(1.0f); // initialize a matrix, IDENTITY MATRIX with 1.0f
+    inputMatrix = glm::scale(inputMatrix, glm::vec3(0.5f, 0.5f, 0.5f)); // scale the container by 0.5 on each axis
+    inputMatrix = glm::rotate(inputMatrix, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // rotate 90 degrees around z-axis
+    // GLuint transformLocation = glGetUniformLocation(shaderProgram2.getId(), "transform");
+    //glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(inputMatrix));
+
+    // 1. We give as input a matrix (in this case IDENTITY MATRIX)
+    // 2. A translation matrix is formed based on given translation vector. Travel a distance of 1 along x-axis, 1 along y-axis and 0 along z-axis.
+    // 3. Multiply input matrix  with formed translation matrix and return. Return resulting matrix.
+    // inputMatrix = glm::translate(inputMatrix, glm::vec3(1.0f, 1.0f, 0.0f));
+
+    vec = inputMatrix * vec; // transformed vector
+    std::cout << vec.x << vec.y << vec.z << std::endl;
+
     // render loop
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
@@ -70,6 +86,19 @@ int main() {
         //glDrawArrays(GL_TRIANGLES, 0, 4); // first: starting index of currently bound VAO, count of vertices
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr); // 6 indices used!
 
+        //Here we first rotate the container around the origin (0,0,0) and once it's rotated, we translate its
+        //rotated version to the bottom-right corner of the screen. Remember that the actual transformation order
+        //should be read in reverse: even though in code we first translate and then later rotate, the actual transformations
+        //first apply a rotation and then a translation.Here we first rotate the container around the origin (0,0,0) and
+        //once it's rotated, we translate its rotated version to the bottom-right corner of the screen. Remember that the
+        //actual transformation order should be read in reverse: even though in code we first translate and then later rotate
+        //, the actual transformations first apply a rotation and then a translation.
+        glm::mat4 trans = glm::mat4(1.0f);
+        trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+        trans = glm::rotate(trans, static_cast<float>(glfwGetTime()), glm::vec3(2.0f, 0.5f, 1.0f));
+        GLuint transformLocation = glGetUniformLocation(shaderProgram2.getId(), "transform");
+        glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(trans));
+        
         glfwPollEvents(); // checks for keyboard input, mouse movement events etc
         glfwSwapBuffers(window);
     }

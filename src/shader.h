@@ -1,7 +1,6 @@
 // include guards, prevent multiple inclusions, preprocessor directives
 #ifndef SHADER_H // check if SHADER_H has NOT been defined before
 #define SHADER_H // define SHADER_H so its not included again
-
 #include <../glad/glad.h>
 
 #include <string>
@@ -33,6 +32,8 @@ public:
     void setInt(const std::string &name, int value) const;
 
     void setFloat(const std::string &name, float value) const;
+
+    [[nodiscard]] GLuint getId() const;
 };
 
 #endif //SHADER_H

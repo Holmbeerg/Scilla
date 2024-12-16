@@ -287,6 +287,7 @@ Addition of vectors v=(4,2) and k=(1,2)
 ![](https://learnopengl.com/img/getting-started/vectors_addition.png)
 
 Just like normal addition and subtraction, vector subtraction is the same as addition with a negated second vector:
+
 $
 \bar{v}=\left(\begin{array}{l}
 1 \\
@@ -718,3 +719,20 @@ z \\
 $
 
 Resulting vector is first scaled by two and then translated by (1,2,3).
+
+
+
+Here we first rotate the container around the origin (0,0,0) and once it's rotated, we translate its
+rotated version to the bottom-right corner of the screen. Remember that the actual transformation order
+should be read in reverse: even though in code we first translate and then later rotate, the actual transformations
+first apply a rotation and then a translation.Here we first rotate the container around the origin (0,0,0) and
+once it's rotated, we translate its rotated version to the bottom-right corner of the screen. Remember that the
+actual transformation order should be read in reverse: even though in code we first translate and then later rotate, 
+the actual transformations first apply a rotation and then a translation.
+```
+glm::mat4 trans = glm::mat4(1.0f);
+trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+trans = glm::rotate(trans, static_cast<float>(glfwGetTime()), glm::vec3(0.0f, 0.0f, 1.0f));
+GLuint transformLocation = glGetUniformLocation(shaderProgram2.getId(), "transform");
+glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(trans));
+```

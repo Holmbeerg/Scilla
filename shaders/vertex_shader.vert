@@ -7,10 +7,11 @@ out vec3 vertPos;
 out vec3 ourColor;
 out vec2 texCoord; // interpolation calculation automatically happens after vertex shader and before fragment shader, interpolated across the fragments (pixels)
 uniform vec4 translation;
+uniform mat4 transform;
 
 void main()
 {
-    gl_Position = vec4(aPos.x + translation.x, aPos.y + translation.y, aPos.z + translation.z, 1.0); // can pass vec3 into vec4
+    gl_Position = transform * vec4(aPos, 1.0f); // multiply position vector with transformation matrix
     ourColor = aColor;
     vertPos = aPos;
     texCoord = aTexCoord;
