@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 
+
 Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath) {
     // Load vertex and fragment shader code
     std::string vertexCode;
@@ -45,46 +46,48 @@ Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath) {
     checkCompileErrors(fragment, "FRAGMENT");
 
     // Link shaders into a program
-    ID = glCreateProgram(); // set ID instance variable
-    glAttachShader(ID, vertex);
-    glAttachShader(ID, fragment);
-    glLinkProgram(ID);
-    glDetachShader(ID, vertex); // Detach after linking
-    glDetachShader(ID, fragment);
-    checkCompileErrors(ID, "PROGRAM");
+    m_id = glCreateProgram(); // set m_id instance variable
+    glAttachShader(m_id, vertex);
+    glAttachShader(m_id, fragment);
+    glLinkProgram(m_id);
+    glDetachShader(m_id, vertex); // Detach after linking
+    glDetachShader(m_id, fragment);
+    checkCompileErrors(m_id, "PROGRAM");
 
     // Delete shaders after linking (they are no longer needed)
     glDeleteShader(vertex);
     glDeleteShader(fragment);
 }
 
+Shader::Shader() : m_id(0) { }
+
 void Shader::use() const {
-    if (ID == 0) {
+    if (m_id == 0) {
         std::cerr << "Error: Shader not initialized!" << std::endl;
         return;
     }
-    glUseProgram(ID);
+    glUseProgram(m_id);
 }
 
 
 void Shader::setBool(const std::string &name, const bool value) const {
-    glUniform1i(glGetUniformLocation(ID, name.c_str()), (int) value); // 1 int
+    glUniform1i(glGetUniformLocation(m_id, name.c_str()), (int) value); // 1 int
 }
 
 void Shader::setInt(const std::string &name, const int value) const {
-    glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
+    glUniform1i(glGetUniformLocation(m_id, name.c_str()), value);
 }
 
 void Shader::setFloat(const std::string &name, const float value) const {
-    glUniform1f(glGetUniformLocation(ID, name.c_str()), value); // 1 float
+    glUniform1f(glGetUniformLocation(m_id, name.c_str()), value); // 1 float
 }
 
 void Shader::setVec4(const std::string &name, const glm::vec4 &value) const {
-    glUniform4f(glGetUniformLocation(ID, name.c_str()), value.x, value.y, value.z, value.w);
+    glUniform4f(glGetUniformLocation(m_id, name.c_str()), value.x, value.y, value.z, value.w);
 }
 
 GLuint Shader::getId() const {
-    return ID;
+    return m_id;
 }
 
 

@@ -13,11 +13,16 @@
 #include <stb/stb_image.h>
 #include "shader.h"
 
+#include "VAO.h"
+#include "VBO.h"
+#include "EBO.h"
+
 constexpr unsigned int SCR_WIDTH = 1000; // unsigned int = only positive numbers, constexpr = known at compile time
 constexpr unsigned int SCR_HEIGHT = 600;
 
 // function prototype/forward declaration = declaration of function
 void framebuffer_size_callback(GLFWwindow *window, int width, int height); // resize window
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void processInput(GLFWwindow *window);
 
 void setupShaders();
@@ -25,14 +30,18 @@ void setupBuffers();
 void createAndGenerateTexture();
 void interpolationValueControls();
 
+VAO vao1, vao2;
+VBO vbo1, vbo2;
+EBO ebo1;
+
 Shader shaderProgram1; // added default constructor to shader class
 Shader shaderProgram2;
-GLuint VBO[2], VAO[2], EBO;
+
 
 int main() {
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 5);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
@@ -45,11 +54,14 @@ int main() {
     }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetKeyCallback(window, key_callback);
 
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
+
+
 
     setupShaders();
     setupBuffers();
@@ -73,7 +85,6 @@ int main() {
     // inputMatrix = glm::translate(inputMatrix, glm::vec3(1.0f, 1.0f, 0.0f));
 
     vec = inputMatrix * vec; // transformed vector
-    std::cout << vec.x << vec.y << vec.z << std::endl;
 
     // render loop
     while (!glfwWindowShouldClose(window)) {
@@ -81,8 +92,6 @@ int main() {
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // state-setting function
         glClear(GL_COLOR_BUFFER_BIT);
         // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // wireframe mode
-
-        glBindVertexArray(VAO[1]);
         //glDrawArrays(GL_TRIANGLES, 0, 4); // first: starting index of currently bound VAO, count of vertices
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr); // 6 indices used!
 
@@ -95,13 +104,14 @@ int main() {
         //, the actual transformations first apply a rotation and then a translation.
         glm::mat4 trans = glm::mat4(1.0f);
         trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
-        trans = glm::rotate(trans, static_cast<float>(glfwGetTime()), glm::vec3(2.0f, 0.5f, 1.0f));
+        trans = glm::rotate(trans, static_cast<float>(tan(glfwGetTime())), glm::vec3(2.0f, 0.5f, 1.0f));
         GLuint transformLocation = glGetUniformLocation(shaderProgram2.getId(), "transform");
         glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(trans));
-        
+
         glfwPollEvents(); // checks for keyboard input, mouse movement events etc
         glfwSwapBuffers(window);
     }
+
     glfwTerminate();
     return 0;
 }
@@ -147,6 +157,12 @@ void createAndGenerateTexture() {
 }
 
 void setupBuffers() {
+    vao1.generate();
+    vao2.generate();
+    vbo1.generate();
+    vbo2.generate();
+    ebo1.generate();
+
     // Three vertices (x, y, z). Vertices = multiple 3D points, vertex = single point
     // Position, color, texture are vertex attributes
     constexpr float vertices[] = {
@@ -169,18 +185,13 @@ void setupBuffers() {
         0, 1, 3, // first triangle
         1, 2, 3, // second triangle
     };
+    const char* version = (const char*)glGetString(GL_VERSION);
+    std::cout << "OpenGL version: " << version << std::endl;
+    vao1.bind();
+    vbo1.bind();
+    vbo1.setData(vertices, sizeof(vertices), GL_STATIC_DRAW);
+    // glNamedBufferData(vbo1.getID(), sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    // Vertex Buffer Objects, store vertices in the GPU's memory, can send large batches of data to the GPU at once
-    // unsigned int VBO, VAO, EBO;
-    glGenVertexArrays(2, VAO);
-    glGenBuffers(2, VBO); // stored in array
-    glGenBuffers(1, &EBO);
-
-    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-    // SETTING UP VAO[0] and VBO[0]
-    glBindVertexArray(VAO[0]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO[0]); // bind VBO buffer object to bind target GL_ARRAY_BUFFER, this VBO is now the active buffer OpenGL will use
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); // add vertices data to bind target
     // position
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) 0); // stride 8*float=24bytes
     glEnableVertexAttribArray(0); // enable once for attribute
@@ -191,10 +202,10 @@ void setupBuffers() {
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (6 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
-    // SETTING UP VAO[1] and VBO[1]
-    glBindVertexArray(VAO[1]);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO[1]); // bind VBO buffer to GL_ARRAY_BUFFER, any buffer calls made on GL_ARRAY_BUFFER will be used to configure currently bound buffer (VBO)
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);
+    vao2.bind();
+    vbo2.bind();
+    vbo2.setData(vertices2, sizeof(vertices2), GL_STATIC_DRAW);
+
     // position
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) 0);
     glEnableVertexAttribArray(0); // new VAO object = need to bind again!
@@ -205,26 +216,36 @@ void setupBuffers() {
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) (6 * sizeof(float)));
     glEnableVertexAttribArray(2);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO); // bind ebo to VAO[1]
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW); // copy user-defined data into the currently bound buffer
-
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0); // registered in glVertexAttribPointer, can safely unbind
+    ebo1.bind();
+    ebo1.setData(indices, sizeof(indices), GL_STATIC_DRAW);
 }
 
 void setupShaders() {
-    const std::string shaderBasePath = "/home/holmberg/development/CLionProjects/OpenGL/shaders/";
+    const std::string shaderBasePath = "shaders/";
     shaderProgram1 = Shader(shaderBasePath + "vertex_shader.vert", shaderBasePath + "fragment_shader.frag"); // left triangle
     shaderProgram2 = Shader(shaderBasePath + "vertex_shader.vert", shaderBasePath + "fragment_shader2.frag"); // right triangle
+}
+
+
+void toggleWireframeMode() {
+    static bool isWireFrame = false;
+    isWireFrame = !isWireFrame;
+    glPolygonMode(GL_FRONT_AND_BACK, isWireFrame ? GL_LINE : GL_FILL);
+}
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    if (key == GLFW_KEY_W && action == GLFW_PRESS) {
+        toggleWireframeMode();
+    }
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
-
 float currentInterpolationValue = 0.2f;
 void processInput(GLFWwindow *window) {
+
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
@@ -257,4 +278,6 @@ void processInput(GLFWwindow *window) {
         isKeyDown = false;
     }
 }
+
+
 

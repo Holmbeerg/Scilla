@@ -9,11 +9,18 @@ https://www.youtube.com/@code-imposter
 C++:
 https://www.learncpp.com/
 
-misc:
+useful/math things:
 https://www.rapidtables.com/convert/color/hex-to-rgb.html
 https://www.khanacademy.org/math/linear-algebra/matrix-transformations
 https://youtu.be/rHLEWRxRGiM
 http://matrixmultiplication.xyz/
+
+cool stuff:
+https://auburn.github.io/FastNoiseLite/
+https://github.com/cgerikj/binary-greedy-meshing
+https://github.com/GTruf/SolarSystem-3D
+https://www.youtube.com/@3DProgramming/videos
+https://www.youtube.com/watch?v=wbpMiKiSKm8&list=PLFt_AvWsXl0eBW2EiBtl_sxmDtSgZBxB3
 
 CMake:
 https://cliutils.gitlab.io/modern-cmake/README.html

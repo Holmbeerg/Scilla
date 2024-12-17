@@ -10,16 +10,12 @@
 #include <glm/glm.hpp>
 
 class Shader {
-private:
-    GLuint ID; // Program id (private)
-
-    static void checkCompileErrors(unsigned int shader, const std::string &type);
 
 public:
     // constructor reads and builds the shader
     Shader(const std::string& vertexPath, const std::string& fragmentPath);
 
-    Shader(): ID(0) {} // default constructor
+    Shader(); // default constructor
 
     void setVec4(const std::string &name, const glm::vec4 &value) const;
 
@@ -34,6 +30,11 @@ public:
     void setFloat(const std::string &name, float value) const;
 
     [[nodiscard]] GLuint getId() const;
+
+private:
+    GLuint m_id; // Program id (private)
+
+    static void checkCompileErrors(unsigned int shader, const std::string &type);
 };
 
 #endif //SHADER_H
