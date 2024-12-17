@@ -16,7 +16,7 @@
 #include "VBO.h"
 #include "EBO.h"
 
-constexpr unsigned int SCR_WIDTH = 1000; // unsigned int = only positive numbers, constexpr = known at compile time
+constexpr unsigned int SCR_WIDTH = 800; // unsigned int = only positive numbers, constexpr = known at compile time
 constexpr unsigned int SCR_HEIGHT = 600;
 
 // function prototype/forward declaration = declaration of function
@@ -58,6 +58,7 @@ int main() {
         glfwTerminate();
         return -1;
     }
+    glfwSwapInterval(0);
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetKeyCallback(window, key_callback);
@@ -67,6 +68,7 @@ int main() {
         return -1;
     }
 
+    glEnable(GL_DEPTH_TEST);
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     glDebugMessageCallback(message_callback, nullptr);
@@ -79,26 +81,63 @@ int main() {
     // need to specify which texture unit each uniform sampler (sample2D) belongs to
     shaderProgram2.setInt("texture2", 1);
 
-    glm::vec4 vec(1.0f, 0.0f, 0.0f, 1.0f); // define a vector
-    glm::mat4 inputMatrix = glm::mat4(1.0f); // initialize a matrix, IDENTITY MATRIX with 1.0f
-    inputMatrix = glm::scale(inputMatrix, glm::vec3(0.5f, 0.5f, 0.5f)); // scale the container by 0.5 on each axis
-    inputMatrix = glm::rotate(inputMatrix, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    //glm::mat4 model(1.0f); // identity matrix
+    //model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f)); // Model matrix, rotate around the x-axis
 
-    vec = inputMatrix * vec; // transformed vector
+    glm::mat4 view = glm::mat4(1.0f); // identity matrix
+    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f)); // View matrix
 
+    glm::mat4 projection;
+    projection = glm::perspective(glm::radians(45.0f), SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+
+    glm::vec3 cubePositions[] = {
+        glm::vec3( 0.0f,  0.0f,  0.0f),
+        glm::vec3( 2.0f,  5.0f, -15.0f),
+        glm::vec3(-1.5f, -2.2f, -2.5f),
+        glm::vec3(-3.8f, -2.0f, -12.3f),
+        glm::vec3( 2.4f, -0.4f, -3.5f),
+        glm::vec3(-1.7f,  3.0f, -7.5f),
+        glm::vec3( 1.3f, -2.0f, -2.5f),
+        glm::vec3( 1.5f,  2.0f, -2.5f),
+        glm::vec3( 1.5f,  0.2f, -1.5f),
+        glm::vec3(-1.3f,  1.0f, -1.5f)
+    };
+
+    double lastTime = glfwGetTime();
+    int nbFrames = 0;
     // render loop
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glm::mat4 model(1.0f);
+        model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr); // 6 indices used
+        int modelLocation = shaderProgram2.getUniformLocation("model");
+        glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
+        int viewLocation = shaderProgram2.getUniformLocation("view");
+        glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
+        int projectionLocation = shaderProgram2.getUniformLocation("projection");
+        glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
 
-        auto trans = glm::mat4(1.0f);
-        trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
-        trans = glm::rotate(trans, static_cast<float>(tan(glfwGetTime())), glm::vec3(2.0f, 0.5f, 1.0f));
-        const GLint transformLocation = glGetUniformLocation(shaderProgram2.getId(), "transform");
-        glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(trans));
+        for (GLuint i = 0; i < 10; i++) {
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, cubePositions[i]);
+            float angle = 20.0f * i;
+            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+            shaderProgram2.setMat4("model", model);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
+
+        double currentTime = glfwGetTime();
+        nbFrames++;
+        if ( currentTime - lastTime >= 1.0 ){ // If last prinf() was more than 1 sec ago
+            // printf and reset timer
+            printf("%f ms/frame\n", 1000.0/double(nbFrames));
+            nbFrames = 0;
+            lastTime += 1.0;
+        }
+
 
         glfwPollEvents(); // checks for keyboard input, mouse movement events etc
         glfwSwapBuffers(window);
@@ -109,10 +148,12 @@ int main() {
 
 void createAndGenerateTexture() {
     containerTexture = Texture("textures/container.jpg");
-    smileyTexture = Texture("textures/awesomeface.png");
+    smileyTexture = Texture("textures/nicke.jpg");
 
     containerTexture.bindToUnit(0);
     smileyTexture.bindToUnit(1);
+
+    smileyTexture.setWrapMode(GL_REPEAT, GL_REPEAT);
 }
 
 void setupBuffers() {
@@ -126,6 +167,57 @@ void setupBuffers() {
         glm::vec3 position;
         glm::vec3 color;
         glm::vec2 texCoord;
+    };
+
+    struct cube {
+        glm::vec3 position;
+        glm::vec2 texCoord;
+    };
+
+    std::cout << offsetof(vertex, texCoord) << std::endl;
+
+    float cubeVertices[] = {
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
     };
 
     constexpr float vertices[] = {
@@ -144,11 +236,12 @@ void setupBuffers() {
     };
 
     vao1.bindVBO(vbo1, 0, sizeof(vertex));
-    vao2.bindVBO(vbo2, 0, sizeof(vertex));
+    // vao2.bindVBO(vbo2, 0, sizeof(vertex));
+    vao2.bindVBO(vbo2, 0, 20);
     vao2.bindEBO(ebo1);
 
     vbo1.setData(vertices, sizeof(vertices));
-    vbo2.setData(vertices, sizeof(vertices));
+    vbo2.setData(cubeVertices, sizeof(cubeVertices));
     ebo1.setData(indices, sizeof(indices));
 
     vao1.enableAttrib(0);
@@ -165,7 +258,9 @@ void setupBuffers() {
 
     vao2.setAttribFormat(0, 3, GL_FLOAT, false, offsetof(vertex, position), 0);
     vao2.setAttribFormat(1, 3, GL_FLOAT, false, offsetof(vertex, color), 0);
-    vao2.setAttribFormat(2, 2, GL_FLOAT, false, offsetof(vertex, texCoord), 0);
+   // vao2.setAttribFormat(2, 2, GL_FLOAT, false, offsetof(vertex, texCoord), 0);
+    vao2.setAttribFormat(2, 2, GL_FLOAT, false, offsetof(cube, texCoord), 0);
+
 
     vao2.bind();
 }

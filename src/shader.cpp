@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <glm/gtc/type_ptr.hpp>
 
 Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath) {
     // Load vertex and fragment shader code
@@ -69,6 +70,7 @@ void Shader::use() const {
 }
 
 
+
 void Shader::setBool(const std::string &name, const bool value) const {
     glUniform1i(glGetUniformLocation(m_shaderID, name.c_str()), (int) value); // 1 int
 }
@@ -85,8 +87,17 @@ void Shader::setVec4(const std::string &name, const glm::vec4 &value) const {
     glUniform4f(glGetUniformLocation(m_shaderID, name.c_str()), value.x, value.y, value.z, value.w);
 }
 
+void Shader::setMat4(const std::string &name, const glm::mat4 &value) const {
+    const GLint location = glGetUniformLocation(m_shaderID, name.c_str());
+    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
+}
+
 GLuint Shader::getId() const {
     return m_shaderID;
+}
+
+int Shader::getUniformLocation(const std::string &name) const {
+    return glGetUniformLocation(m_shaderID, name.c_str());
 }
 
 

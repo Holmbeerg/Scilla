@@ -736,3 +736,134 @@ trans = glm::rotate(trans, static_cast<float>(glfwGetTime()), glm::vec3(0.0f, 0.
 GLuint transformLocation = glGetUniformLocation(shaderProgram2.getId(), "transform");
 glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(trans));
 ```
+
+### Coordinate systems
+After each vertex shader run OpenGL expects all vertices that we want to become visible to be in **Normalized Device Coordinates**.
+X, y, and z-coordinates for each vertex should be between -1 and 1. Usually we specify the coordinates in a range, or space, and then
+in the vertex shader transform these to **NDC**. The **Normalized Device Coordinates** are then given to the rasterizer to transform
+them to 2D coordinates/pixels/fragments on the screen, and then to fragment shader for further processing (shading, texturing etc).
+
+Vertices are transformed at different stages:
+* Local space/object space/model space
+* World space
+* View space/camera space/eye space
+* Clip space
+* Screen space/2D coordinates
+
+![](https://learnopengl.com/img/getting-started/coordinate_systems.png)
+
+### Local space
+If you create a cube in blender, its initial position is probably (0, 0, 0). Coordinates are local to object, all the vertices are in local space.
+
+### World space
+We want to define a position for each object to position them inside a larger world.
+Coordinates of all your vertices relative to a (game) world. This is for example the coordinate space where want objects transformed in such a way
+that they are scattered around the place, preferably in a realistic fashion. 
+
+Objects get transformed from **Local Space** to **World Space** with the help of the **Model** matrix. the **Model** matrix is a transformation matrix that
+translates, scales and/or rotates the object to place it in the world.
+
+The **model matrix** consists of translations, scaling and/or rotations we'd like to apply to **transform** all object's vertices to the global world space.
+
+### Camera space
+Also known as **View Space or Eye Space** this is where **World Space** coordinates get transformed to coordinates that are in front of the user's view.
+The combined transformations of this is stored inside a **View Matrix** that transforms world coordinates to view space.
+
+To move a camera backwards, is the same as moving the entire scene forward.
+
+That is exactly what a **view matrix** does, we move the entire scene around inversed to where we want the camera to move.
+Because we want to move backwards and since OpenGL is a right-handed system we have to move in the positive z-axis. We do this by translating the scene towards the negative z-axis. This gives the impression that we are moving backwards.
+
+![](https://learnopengl.com/img/getting-started/coordinate_systems_right_handed.png)
+
+### Clip space
+At the end of each vertex shader run, OpenGL excepts coordinates to be within a certain range. If they are **_NOT_** within this range,
+they get **clipped**, discarded.
+
+To transform vertex coordinates from **camera space** to **clip space** we define a **projection matrix** that specifies a range of coordinates, 
+e.g. -1000 and 1000 in each dimension. 
+
+Within this specified range the projection matrix then converts the coordinates to **normalized device coordinates**, with **perspective divsion**
+between, dividing with **w**. Coordinates outside this range will not be mapped between -1.0 and 1.0 and therefore **clipped**.
+
+For example, if the specified range is (-1000, 1000), a coordinate with position (1250, 750, 500) would **NOT** be visible. If only part of a primitive
+, for example a triangle is outside the **clipping volume**, OpenGL reconstruct the triangle as one or more triangles to fit within the clipping range.
+
+**Projection matrix** creates a **viewing box** that is called a **frustum**, and each coordinate that ends up within this **frustum**, will end up 
+visible on the users screen. This entire process to convert coordinates within a specified range to **NDC** is called **projection**, 
+since the **projection matrix** projects 3D coordinates to the easy-to-map-to-2D **normalized device coordinates**.
+
+**Perspective divison** transforms the 4D clip space coordinates to 3D **normalized device coordinates**. This step is performed automatically 
+at the end of the vertex shader step.
+
+After this the resulting coordinates are mapped to screen coordinates using the settings of **glViewport** and turned into fragments.
+
+### Orthographic projection
+The projection matrix to transform view coordinates to clip coordinates usually takes two different forms, where each form defines its own unique **frustum**. We 
+can either create an **orthographic projection matrix** or a **perspective projection matrix**
+
+Defines a cube-like frustum box that defines a clipping space where each vertex outside this box is clipped. When creating an **orthographic projection**, 
+we specify the width, height and length of the visible **frustum**.
+
+![](https://learnopengl.com/img/getting-started/orthographic_frustum.png)
+
+The frustum defines the visible coordinates and is specified by a **width**, a **height** and a **near** and **far** plane.
+
+The **orthographic frustum** directly maps all coordinates inside the frustum to **normalized device coordinates** without any special side effects since it won't touch the w component of the transformed vector; if the w component remains equal to 1.0 perspective division won't change the coordinates.
+
+To create an orthographic projection matrix we make use of GLM's built-in function glm::ortho
+
+```
+glm::ortho(0.0f, 800.0f, 0.0f, 600.0f, 0.1f, 100.0f);
+```
+
+The first two parameters specify the **left and right coordinate** of the frustum and the **third and fourth parameter specify the bottom and top part** of the frustum. With those **4 points we've defined the size of the near and far planes** and the **5th and 6th parameter then define the distances between the near and far plane**. This specific projection 
+matrix transforms all coordinates between these x, y and z range values to normalized device coordinates. 
+
+An **orthographic projection** matrix **directly maps** coordinates to the 2D plane that is your screen, but in reality a direct projection produces unrealistic results since the projection doesn't take **perspective** into account. That is something the **perspective projection matrix** fixes for us. 
+
+### Perspective projection
+The effect of objects further away appearing smaller = **perspective**.
+
+![](https://learnopengl.com/img/getting-started/perspective.png)
+
+A **perspective projection matrix** maps a given **frustum** range to **clip space**, but also manipulates the **w** value of each vertex coordinate
+in such a way that the further away an object is from the viewer, the higher this **w** component becomes. 
+
+Once coordinates are transformed to **clip space** they are in the range **-w** to **w**, anything outside is clipped.
+
+**Face culling:** Discarding triangle primitives based on their winding order relative to the viewport. The order of a triangle's vertices is called the winding order
+
+Once the coordinates are in **clip space**, **perspective division** is applied to them. By dividing with the **w** value, we get smaller
+vertex coordinates the further an object is from the viewer. The resulting coordinates are then in **normalized device space**. 
+
+A perspective projection matrix can be created in GLM as follows: 
+
+```
+glm::mat4 proj = glm::perspective(glm::radians(45.0f), (float)width/(float)height, 0.1f, 100.0f);
+```
+
+1. First parameter defines the **Field of View**, sets how large the viewspace is. Usually set to 45 degrees for a realistic view.
+2. Second parameter sets aspect ratio, calculated by dividing viewports width by its height.
+3. Third and fourth parameters set the **near** and **far** plane of the **frustum**. Usually near distance is 0.1 and far distance 100. All vertices between the near and far plane and inside the frustum will be rendered.
+
+**Perspective frustum** can be visualized as a non-uniformly shaped box from where each coordinate inside this box will be mapped to a point in clip space
+Perspective frustum:
+
+![](https://learnopengl.com/img/getting-started/perspective_frustum.png)
+
+Whenever the near value of your perspective matrix is set too high (like 10.0), OpenGL will clip all coordinates close to the camera (between 0.0 and 10.0), which can give a visual result you maybe have seen before in videogames where you could see through certain objects when moving uncomfortably close to them. 
+
+![](https://learnopengl.com/img/getting-started/perspective_orthographic.png)
+
+Because the **orthographic projection doesn't use perspective projection**, objects farther away **do not** seem smaller, which produces a weird visual output. For this reason the orthographic projection is mainly used for 2D renderings and for some architectural or engineering applications where we'd rather not have vertices distorted by perspective
+
+**So**, we create a transformation matrix for each step: **Model**, **View** and **Projection** matrix. A vertex coordinate is then **transformed** to 
+clip coordinates as follows:
+
+$V_{clip}=M_{projection}\cdot M_{view}\cdot M_{model}\cdot V_{local}$
+
+Order of matrix multiplication needs to be in reverse as explained earlier. 
+
+The resulting vertex should then be assigned to ```gl_Position``` in the vertex shader and OpenGL will then automatically perform **perspective Division** and **clipping**.
+

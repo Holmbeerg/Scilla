@@ -18,6 +18,18 @@ https://stackoverflow.com/questions/59222806/how-does-glm-handle-translation
 3. Multiply input matrix  with formed translation matrix and return. Return resulting matrix.
 inputMatrix = glm::translate(inputMatrix, glm::vec3(1.0f, 1.0f, 0.0f));
 
-rotate 90 degrees around z-axis, glm::radians takes degrees and gives radians
-inputMatrix = glm::rotate(inputMatrix, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+glm::vec4 vec(1.0f, 0.0f, 0.0f, 1.0f); // define a vector
+glm::mat4 inputMatrix = glm::mat4(1.0f); // initialize a matrix, IDENTITY MATRIX with 1.0f
+inputMatrix = glm::scale(inputMatrix, glm::vec3(0.5f, 0.5f, 0.5f)); // scale the container by 0.5 on each axis
+inputMatrix = glm::rotate(inputMatrix, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // rotate by 90 degrees around the z-axis
 
+glm::mat4 model(1.0f); // identity matrix
+model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f)); // rotate around the x-axis
+= By multiplying the vertex coordinates with this model matrix we're transforming the vertex coordinates to world coordinates.
+Our plane that is slightly on the floor thus represents the plane in the global world.
+
+auto trans = glm::mat4(1.0f);
+trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+trans = glm::rotate(trans, static_cast<float>(tan(glfwGetTime())), glm::vec3(2.0f, 0.5f, 1.0f));
+const GLint transformLocation = glGetUniformLocation(shaderProgram2.getId(), "transform");
+glUniformMatrix4fv(transformLocation, 1, GL_FALSE, glm::value_ptr(trans));

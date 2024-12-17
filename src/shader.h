@@ -24,6 +24,10 @@ public:
 
     void setFloat(const std::string &name, float value) const;
 
+    void setMat4(const std::string &name, const glm::mat4 &value) const;
+
+    [[nodiscard]] int getUniformLocation(const std::string &name) const;
+
     [[nodiscard]] GLuint getId() const;
 
 private:

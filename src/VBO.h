@@ -8,11 +8,7 @@ public:
 
     void generate();
 
-    void setData(const GLfloat *vertices, const GLsizeiptr size) const;
-
-    void bind() const;
-
-    static void unbind();
+    void setData(const void* data, GLsizeiptr size) const;
 
     [[nodiscard]] GLuint getID() const;
 
