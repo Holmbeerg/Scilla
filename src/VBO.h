@@ -1,7 +1,4 @@
-// VBO.h
-#ifndef VBO_H
-#define VBO_H
-
+#pragma once
 #include <glad/glad.h>
 
 class VBO {
@@ -11,7 +8,7 @@ public:
 
     void generate();
 
-    void setData(const GLfloat *vertices, const GLsizeiptr size, const GLenum usage);
+    void setData(const GLfloat *vertices, const GLsizeiptr size) const;
 
     void bind() const;
 
@@ -22,7 +19,5 @@ public:
     ~VBO();
 
 private:
-    GLuint m_id;
+    GLuint m_vboID;
 };
-
-#endif

@@ -1,7 +1,4 @@
-// EBO.h
-#ifndef EBO_H
-#define EBO_H
-
+#pragma once
 #include <glad/glad.h>
 
 class EBO {
@@ -9,14 +6,10 @@ class EBO {
 public:
     EBO();
     void generate();
-    void setData(const GLuint* indices, GLsizeiptr size, GLenum usage = GL_STATIC_DRAW);
-    void bind() const;
-    static void unbind();
+    void setData(const GLuint* indices, GLsizeiptr size) const;
     [[nodiscard]] GLuint getID() const;
     ~EBO();
 
 private:
-    GLuint m_id;
+    GLuint m_eboID;
 };
-
-#endif

@@ -1,12 +1,7 @@
-// include guards, prevent multiple inclusions, preprocessor directives
-#ifndef SHADER_H // check if SHADER_H has NOT been defined before
-#define SHADER_H // define SHADER_H so its not included again
+#pragma once
 #include <../glad/glad.h>
 
 #include <string>
-#include <fstream>
-#include <sstream>
-#include <iostream>
 #include <glm/glm.hpp>
 
 class Shader {
@@ -32,9 +27,7 @@ public:
     [[nodiscard]] GLuint getId() const;
 
 private:
-    GLuint m_id; // Program id (private)
+    GLuint m_shaderID; // Program id (private)
 
     static void checkCompileErrors(unsigned int shader, const std::string &type);
 };
-
-#endif //SHADER_H

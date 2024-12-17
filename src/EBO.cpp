@@ -2,29 +2,21 @@
 #include "EBO.h"
 
 EBO::EBO()
-    : m_id(0) { }
+    : m_eboID(0) { }
 
 void EBO::generate() {
-    glGenBuffers(1, &m_id);
+    glCreateBuffers(1, &m_eboID);
 }
 
-void EBO::setData(const GLuint* indices, GLsizeiptr size, GLenum usage) {
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, indices, usage);  // Upload index data to the buffer
-}
-
-void EBO::bind() const {
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_id);  // Bind the element array buffer
-}
-
-void EBO::unbind() {
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);  // Unbind the element array buffer
+void EBO::setData(const GLuint* indices, const GLsizeiptr size) const {
+    glNamedBufferStorage(m_eboID, size, indices, GL_DYNAMIC_STORAGE_BIT | GL_MAP_READ_BIT | GL_MAP_WRITE_BIT);
 }
 
 GLuint EBO::getID() const {
-    return m_id;  // Return the buffer ID
+    return m_eboID;  // Return the buffer ID
 }
 
 EBO::~EBO() {
-    glDeleteBuffers(1, &m_id);  // Delete the buffer when the object is destroyed
+    glDeleteBuffers(1, &m_eboID);  // Delete the buffer when the object is destroyed
 }
 

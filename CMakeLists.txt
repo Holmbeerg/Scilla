@@ -22,7 +22,9 @@ add_executable(opengl_project
         src/VBO.cpp
         src/VBO.h
         src/EBO.cpp
-        src/EBO.h)
+        src/EBO.h
+        src/Texture.cpp
+        src/Texture.h)
 
 target_include_directories(opengl_project PRIVATE
         ${CMAKE_SOURCE_DIR}
