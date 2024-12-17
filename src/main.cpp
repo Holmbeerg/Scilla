@@ -23,6 +23,7 @@ constexpr unsigned int SCR_HEIGHT = 600;
 // function prototype/forward declaration = declaration of function
 void framebuffer_size_callback(GLFWwindow *window, int width, int height); // resize window
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param);
 void processInput(GLFWwindow *window);
 
 void setupShaders();
@@ -37,12 +38,12 @@ EBO ebo1;
 Shader shaderProgram1; // added default constructor to shader class
 Shader shaderProgram2;
 
-
 int main() {
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 5);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4); // OpenGL 4
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6); // OpenGL 6 (4.6)
     //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
 
@@ -61,8 +62,9 @@ int main() {
         return -1;
     }
 
-
-
+    glEnable(GL_DEBUG_OUTPUT);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    glDebugMessageCallback(message_callback, nullptr);
     setupShaders();
     setupBuffers();
     createAndGenerateTexture();
@@ -112,6 +114,7 @@ int main() {
         glfwSwapBuffers(window);
     }
 
+
     glfwTerminate();
     return 0;
 }
@@ -130,30 +133,36 @@ void createAndGenerateTexture() {
 
     // Textures
     unsigned int texture1, texture2; // Texture object
+
     // Texture 1
-    glGenTextures(1, &texture1);
-    glActiveTexture(GL_TEXTURE0); // set active Texture Unit to GL_TEXTURE0
-    glBindTexture(GL_TEXTURE_2D, texture1); // Bind the texture object to the texture target GL_TEXTURE_2D
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
+    glCreateTextures(GL_TEXTURE_2D, 1, &texture1);
+    glBindTextureUnit(0, texture1);
+
+    glTextureParameteri(texture1, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTextureParameteri(texture1, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTextureParameteri(texture1, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTextureParameteri(texture1, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glTextureStorage2D(texture1, 1, GL_RGBA8, width, height);
+    glTextureSubImage2D(texture1, 0, 0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, data);
+
+    // glGenerateTextureMipmap(texture1);
     stbi_image_free(data); // free data to free up memory
 
     // Texture 2
-    glGenTextures(1, &texture2);
-    glActiveTexture(GL_TEXTURE1); // set active Texture Unit to GL_TEXTURE1
-    glBindTexture(GL_TEXTURE_2D, texture2);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // Mipmap
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    // Specify texture parameters, If we load a PNG image we need to specify that image contains ALPHA channel (transparency) with GL_RGBA
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data2);
+    glCreateTextures(GL_TEXTURE_2D, 1, &texture2);
+    glBindTextureUnit(1, texture2);
+
+    glTextureParameteri(texture2, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTextureParameteri(texture2, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTextureParameteri(texture2, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTextureParameteri(texture2, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glTextureStorage2D(texture2, 1, GL_RGBA8, width, height);
+    glTextureSubImage2D(texture2, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data2);
+
+    // glGenerateTextureMipmap(texture1);
     stbi_image_free(data2);
-    glGenerateMipmap(GL_TEXTURE_2D); // generate all required mipmaps for currently bound texture
 }
 
 void setupBuffers() {
@@ -185,12 +194,10 @@ void setupBuffers() {
         0, 1, 3, // first triangle
         1, 2, 3, // second triangle
     };
-    const char* version = (const char*)glGetString(GL_VERSION);
-    std::cout << "OpenGL version: " << version << std::endl;
+
     vao1.bind();
     vbo1.bind();
     vbo1.setData(vertices, sizeof(vertices), GL_STATIC_DRAW);
-    // glNamedBufferData(vbo1.getID(), sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     // position
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *) 0); // stride 8*float=24bytes
@@ -242,6 +249,45 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
     glViewport(0, 0, width, height);
 }
+
+void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param) {
+    auto const src_str = [source]() {
+        switch (source)
+        {
+            case GL_DEBUG_SOURCE_API: return "API";
+            case GL_DEBUG_SOURCE_WINDOW_SYSTEM: return "WINDOW SYSTEM";
+            case GL_DEBUG_SOURCE_SHADER_COMPILER: return "SHADER COMPILER";
+            case GL_DEBUG_SOURCE_THIRD_PARTY: return "THIRD PARTY";
+            case GL_DEBUG_SOURCE_APPLICATION: return "APPLICATION";
+            case GL_DEBUG_SOURCE_OTHER: return "OTHER";
+        }
+    }();
+
+    auto const type_str = [type]() {
+        switch (type)
+        {
+            case GL_DEBUG_TYPE_ERROR: return "ERROR";
+            case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: return "DEPRECATED_BEHAVIOR";
+            case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: return "UNDEFINED_BEHAVIOR";
+            case GL_DEBUG_TYPE_PORTABILITY: return "PORTABILITY";
+            case GL_DEBUG_TYPE_PERFORMANCE: return "PERFORMANCE";
+            case GL_DEBUG_TYPE_MARKER: return "MARKER";
+            case GL_DEBUG_TYPE_OTHER: return "OTHER";
+        }
+    }();
+
+    auto const severity_str = [severity]() {
+        switch (severity) {
+            case GL_DEBUG_SEVERITY_NOTIFICATION: return "NOTIFICATION";
+            case GL_DEBUG_SEVERITY_LOW: return "LOW";
+            case GL_DEBUG_SEVERITY_MEDIUM: return "MEDIUM";
+            case GL_DEBUG_SEVERITY_HIGH: return "HIGH";
+        }
+    }();
+    std::cout << src_str << ", " << type_str << ", " << severity_str << ", " << id << ": " << message << '\n';
+}
+
+
 
 float currentInterpolationValue = 0.2f;
 void processInput(GLFWwindow *window) {

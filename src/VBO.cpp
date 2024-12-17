@@ -10,7 +10,7 @@ void VBO::generate() {
 }
 
 void VBO::setData(const GLfloat *vertices, const GLsizeiptr size, const GLenum usage) {
-    glBufferData(GL_ARRAY_BUFFER, size, vertices, usage);
+    glNamedBufferData(m_id, size, vertices, usage);
 }
 
 void VBO::bind() const {
