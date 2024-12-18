@@ -84,11 +84,9 @@ int main() {
     //glm::mat4 model(1.0f); // identity matrix
     //model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f)); // Model matrix, rotate around the x-axis
 
-    glm::mat4 view = glm::mat4(1.0f); // identity matrix
-    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f)); // View matrix
-
-    glm::mat4 projection;
-    projection = glm::perspective(glm::radians(45.0f), SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+    auto view = glm::mat4(1.0f); // identity matrix
+    view = translate(view, glm::vec3(0.0f, 0.0f, -5.0f)); // View matrix
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
 
     glm::vec3 cubePositions[] = {
         glm::vec3( 0.0f,  0.0f,  0.0f),
@@ -111,7 +109,6 @@ int main() {
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glm::mat4 model(1.0f);
-        model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
 
         int modelLocation = shaderProgram2.getUniformLocation("model");
         glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
@@ -121,10 +118,15 @@ int main() {
         glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
 
         for (GLuint i = 0; i < 10; i++) {
-            glm::mat4 model = glm::mat4(1.0f);
+            auto model = glm::mat4(1.0f);
+
             model = glm::translate(model, cubePositions[i]);
             float angle = 20.0f * i;
-            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+
+            if (i % 3 == 0) {
+                model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+                //model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+            }
             shaderProgram2.setMat4("model", model);
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
@@ -275,7 +277,7 @@ void setupShaders() {
 
 
 void toggleWireframeMode() {
-    static bool isWireFrame = false;
+    static bool isWireFrame = false; // static to keep value after exiting function
     isWireFrame = !isWireFrame;
     glPolygonMode(GL_FRONT_AND_BACK, isWireFrame ? GL_LINE : GL_FILL);
 }
