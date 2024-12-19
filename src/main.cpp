@@ -9,22 +9,21 @@
 #include <string>
 #include <filesystem>
 
-#include "Camera.h"
-#include "Shader.h"
-#include "Texture.h"
+#include "camera/Camera.h"
+#include "graphics/Shader.h"
+#include "graphics/Texture.h"
 
-#include "VAO.h"
-#include "VBO.h"
-#include "EBO.h"
-#include "FrameTimer.h"
-#include "InputHandler.h"
+#include "graphics/VAO.h"
+#include "graphics/VBO.h"
+#include "graphics/EBO.h"
+#include "utils/FrameTimer.h"
+#include "input/InputHandler.h"
 
 constexpr unsigned int SCR_WIDTH = 800; // unsigned int = only positive numbers, constexpr = known at compile time
 constexpr unsigned int SCR_HEIGHT = 600;
 
 // function prototype/forward declaration = declaration of function
 void framebuffer_size_callback(GLFWwindow *window, int width, int height); // resize window
-void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 

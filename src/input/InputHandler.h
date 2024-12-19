@@ -1,5 +1,4 @@
 #pragma once
-#include <functional>
 #include <GLFW/glfw3.h>
 
 class InputHandler {
@@ -12,6 +11,4 @@ private:
     void toggleWireframeMode();
     GLFWwindow* m_window;
     bool m_wireframeMode;
-
-    static std::function<void()> s_toggleWireframeCallback;
 };

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <glad/glad.h>
+#include <glad.h>
 
 class VBO; // faster than #include
 class EBO;

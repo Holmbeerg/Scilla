@@ -14,23 +14,23 @@ find_package(glfw3 3.3 REQUIRED)
 add_executable(opengl_project
         src/main.cpp
         glad/glad.c
-        src/Shader.h
-        src/Shader.cpp
+        src/graphics/Shader.h
+        src/graphics/Shader.cpp
         stb/stb_image.cpp
-        src/VAO.cpp
-        src/VAO.h
-        src/VBO.cpp
-        src/VBO.h
-        src/EBO.cpp
-        src/EBO.h
-        src/Texture.cpp
-        src/Texture.h
-        src/Camera.cpp
-        src/Camera.h
-        src/FrameTimer.cpp
-        src/FrameTimer.h
-        src/InputHandler.cpp
-        src/InputHandler.h
+        src/graphics/VAO.cpp
+        src/graphics/VAO.h
+        src/graphics/VBO.cpp
+        src/graphics/VBO.h
+        src/graphics/EBO.cpp
+        src/graphics/EBO.h
+        src/graphics/Texture.cpp
+        src/graphics/Texture.h
+        src/camera/Camera.cpp
+        src/camera/Camera.h
+        src/utils/FrameTimer.cpp
+        src/utils/FrameTimer.h
+        src/input/InputHandler.cpp
+        src/input/InputHandler.h
 )
 
 target_include_directories(opengl_project PRIVATE

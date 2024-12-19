@@ -4,7 +4,7 @@
 #include <glm/ext/matrix_transform.hpp>
 
 Camera::Camera()
-    : m_yaw(-90.0f), m_pitch(0.0f), m_roll(0.0f),
+    : m_yaw(0.0f), m_pitch(0.0f), m_roll(0.0f),
       m_lastX(400.0f), m_lastY(300.0f),
       m_xOffset(0.0f), m_yOffset(0.0f),
       m_sensitivity(0.1f), m_speed(4.0f),
@@ -44,9 +44,9 @@ void Camera::update(double xpos, double ypos) {
 }
 
 void Camera::updateView() {
-    m_direction.x = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+    m_direction.x = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
     m_direction.y = sin(glm::radians(m_pitch));
-    m_direction.z = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+    m_direction.z = -cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
     m_cameraFront = glm::normalize(m_direction);
 
     m_cameraRight = glm::normalize(glm::cross(m_cameraFront, m_worldUp));
