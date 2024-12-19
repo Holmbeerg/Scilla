@@ -17,6 +17,7 @@
 #include "VBO.h"
 #include "EBO.h"
 #include "FrameTimer.h"
+#include "InputHandler.h"
 
 constexpr unsigned int SCR_WIDTH = 800; // unsigned int = only positive numbers, constexpr = known at compile time
 constexpr unsigned int SCR_HEIGHT = 600;
@@ -67,7 +68,6 @@ int main() {
     }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    glfwSetKeyCallback(window, key_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -84,6 +84,8 @@ int main() {
     setupShaders();
     setupBuffers();
     createAndGenerateTexture();
+
+    InputHandler input_handler(window);
 
     shaderProgram2.use();
     // need to specify which texture unit each uniform sampler (sample2D) belongs to
@@ -105,11 +107,9 @@ int main() {
 
     // render loop
     while (!glfwWindowShouldClose(window)) {
-        processInput(window);
         camera.processInput(window, frameTimer.getDeltaTime());
         frameTimer.update();
         glm::mat4 projection = glm::perspective(glm::radians(camera.getFov()), SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
-
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -261,19 +261,6 @@ void setupShaders() {
     shaderProgram2 = Shader(shaderBasePath + "vertex_shader.vert", shaderBasePath + "fragment_shader2.frag");
 }
 
-
-void toggleWireframeMode() {
-    static bool isWireFrame = false; // static to keep value after exiting function
-    isWireFrame = !isWireFrame;
-    glPolygonMode(GL_FRONT_AND_BACK, isWireFrame ? GL_LINE : GL_FILL);
-}
-
-void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
-    if (key == GLFW_KEY_F && action == GLFW_PRESS) {
-        toggleWireframeMode();
-    }
-}
-
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
     glViewport(0, 0, width, height);
 }
@@ -320,42 +307,4 @@ void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GL
         }
     }();
     std::cout << src_str << ", " << type_str << ", " << severity_str << ", " << id << ": " << message << '\n';
-}
-
-
-
-void processInput(GLFWwindow *window) {
-    static float currentInterpolationValue = 0.2f;
-
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, true);
-    }
-
-    if (currentInterpolationValue >= 1.0f) {
-        currentInterpolationValue = 1.0f;
-    } else if (currentInterpolationValue <= 0.0f) {
-        currentInterpolationValue = 0.0f;
-    }
-
-    shaderProgram2.setFloat("interpolationValue", currentInterpolationValue);
-    static bool isUpPressed = false;
-
-    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-        if (!isUpPressed) {
-            currentInterpolationValue += 0.1f;
-            isUpPressed = true;
-        }
-    } else if (isUpPressed && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_RELEASE) {
-        isUpPressed = false;
-    }
-
-    static bool isKeyDown = false;
-    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-        if (!isKeyDown) {
-            currentInterpolationValue -= 0.1f;
-            isKeyDown = true;
-        }
-    } else if (isKeyDown && glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_RELEASE) {
-        isKeyDown = false;
-    }
 }

@@ -1,1 +1,35 @@
 #include "InputHandler.h"
+
+InputHandler::InputHandler(GLFWwindow *window)
+    : m_window(window)
+      , m_wireframeMode(false) {
+
+    // Store the instance pointer
+    glfwSetWindowUserPointer(window, this); // https://stackoverflow.com/questions/55145966/what-does-glfwgetwindowuserpointer-do
+    glfwSetKeyCallback(window, keyCallback);
+}
+
+void InputHandler::keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
+    if (auto *handler = static_cast<InputHandler *>(glfwGetWindowUserPointer(window))) { // Retrieve the instance pointer
+        handler->handleKeyInput(key, scancode, action, mods);
+    }
+}
+
+void InputHandler::handleKeyInput(int key, int scancode, int action, int mods) {
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        glfwSetWindowShouldClose(m_window, true);
+    }
+
+    if (key == GLFW_KEY_F && action == GLFW_PRESS) {
+        toggleWireframeMode();
+    }
+}
+
+void InputHandler::toggleWireframeMode() {
+    m_wireframeMode = !m_wireframeMode;
+    if (m_wireframeMode) {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    } else {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+}
