@@ -2,9 +2,9 @@
 
 class FrameTimer {
 private:
-    double lastTime;
-    int frameCount;
-    float deltaTime;
+    double m_lastTime;
+    int m_frameCount;
+    float m_deltaTime;
 public:
     FrameTimer();
     void update();

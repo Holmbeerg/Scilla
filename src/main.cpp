@@ -8,6 +8,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
 #include <filesystem>
+
+#include "Camera.h"
 #include "Shader.h"
 #include "Texture.h"
 
@@ -19,13 +21,11 @@
 constexpr unsigned int SCR_WIDTH = 800; // unsigned int = only positive numbers, constexpr = known at compile time
 constexpr unsigned int SCR_HEIGHT = 600;
 
-glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f,  3.0f);
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
-
 // function prototype/forward declaration = declaration of function
 void framebuffer_size_callback(GLFWwindow *window, int width, int height); // resize window
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
+void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 
 void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const *message,
                       void const *user_param);
@@ -41,6 +41,7 @@ void createAndGenerateTexture();
 void interpolationValueControls();
 
 FrameTimer frameTimer;
+Camera camera;
 
 VAO vao1, vao2;
 VBO vbo1, vbo2;
@@ -64,10 +65,12 @@ int main() {
         glfwTerminate();
         return -1;
     }
-    glfwSwapInterval(0);
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetKeyCallback(window, key_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetScrollCallback(window, scroll_callback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         std::cout << "Failed to initialize GLAD" << std::endl;
@@ -82,17 +85,10 @@ int main() {
     setupBuffers();
     createAndGenerateTexture();
 
-
     shaderProgram2.use();
-    shaderProgram2.setInt("texture1", 0);
     // need to specify which texture unit each uniform sampler (sample2D) belongs to
+    shaderProgram2.setInt("texture1", 0);
     shaderProgram2.setInt("texture2", 1);
-
-    //glm::mat4 model(1.0f); // identity matrix
-    //model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f)); // Model matrix, rotate around the x-axis
-
-    //    glm::mat4 view = glm::mat4(1.0f); // identity matrix
-    // view = translate(view, glm::vec3(0.0f, 0.0f, -5.0f)); // View matrix
 
     glm::vec3 cubePositions[] = {
         glm::vec3( 0.0f,  0.0f,  0.0f),
@@ -107,30 +103,29 @@ int main() {
         glm::vec3(-1.3f,  1.0f, -1.5f)
     };
 
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f), SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
-
-    glm::mat4 view;
-
     // render loop
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
+        camera.processInput(window, frameTimer.getDeltaTime());
+        frameTimer.update();
+        glm::mat4 projection = glm::perspective(glm::radians(camera.getFov()), SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
+
+
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        frameTimer.update();
-        glm::mat4 model(1.0f);
-        view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+
+        glm::mat4 model = glm::mat4(1.0f);
 
         for (GLuint i = 0; i < 10; i++) {
-            model = glm::mat4(1.0f);
 
             model = glm::translate(model, cubePositions[i]);
 
             if (i % 3 == 0) {
-                model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
-                //model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+                // model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+                model = glm::rotate(model, glm::radians(15.0f), glm::vec3(1.0f, 0.3f, 0.5f));
             }
             shaderProgram2.setMat4("projection", projection);
-            shaderProgram2.setMat4("view", view);
+            shaderProgram2.setMat4("view", camera.getViewMatrix());
             shaderProgram2.setMat4("model", model);
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
@@ -143,12 +138,10 @@ int main() {
 
 void createAndGenerateTexture() {
     containerTexture = Texture("textures/container.jpg");
-    smileyTexture = Texture("textures/nicke.jpg");
+    smileyTexture = Texture("textures/awesomeface.png");
 
     containerTexture.bindToUnit(0);
     smileyTexture.bindToUnit(1);
-
-    smileyTexture.setWrapMode(GL_REPEAT, GL_REPEAT);
 }
 
 void setupBuffers() {
@@ -285,6 +278,14 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
+void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+    camera.update(xpos, ypos);
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+    camera.processScroll(xoffset, yoffset);
+}
+
 void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const *message,
                       void const *user_param) {
     auto const src_str = [source]() {
@@ -325,17 +326,6 @@ void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GL
 
 void processInput(GLFWwindow *window) {
     static float currentInterpolationValue = 0.2f;
-
-    const float cameraSpeed = 4.0f * frameTimer.getDeltaTime();
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        cameraPos += cameraSpeed * cameraFront;
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        cameraPos -= cameraSpeed * cameraFront;
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);

@@ -867,3 +867,17 @@ Order of matrix multiplication needs to be in reverse as explained earlier.
 
 The resulting vertex should then be assigned to ```gl_Position``` in the vertex shader and OpenGL will then automatically perform **perspective Division** and **clipping**.
 
+### Euler angles
+3 values that can represent any rotation in 3D. Each of the angles are represented by a value and with the combination of all 3 we can calculate
+any rotation vector in 3D.
+
+There are 3 **Euler angles**: **pitch**, **yaw**, and **roll**.
+
+![](https://learnopengl.com/img/getting-started/camera_pitch_yaw_roll.png)
+
+**Pitch** is the angle that depicts how much we are looking up or down. The **vertical** movement of the mouse
+
+**Yaw** represents the magnitude we're looking to the right or left. The **horizontal** movement of the mouse.
+
+**Roll** represents how much we roll.
+

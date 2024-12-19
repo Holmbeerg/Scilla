@@ -29,6 +29,8 @@ add_executable(opengl_project
         src/Camera.h
         src/FrameTimer.cpp
         src/FrameTimer.h
+        src/InputHandler.cpp
+        src/InputHandler.h
 )
 
 target_include_directories(opengl_project PRIVATE
