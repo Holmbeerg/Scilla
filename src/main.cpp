@@ -8,16 +8,20 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
 #include <filesystem>
-#include <stb/stb_image.h>
-#include "shader.h"
+#include "Shader.h"
 #include "Texture.h"
 
 #include "VAO.h"
 #include "VBO.h"
 #include "EBO.h"
+#include "FrameTimer.h"
 
 constexpr unsigned int SCR_WIDTH = 800; // unsigned int = only positive numbers, constexpr = known at compile time
 constexpr unsigned int SCR_HEIGHT = 600;
+
+glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f,  3.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
 
 // function prototype/forward declaration = declaration of function
 void framebuffer_size_callback(GLFWwindow *window, int width, int height); // resize window
@@ -35,6 +39,8 @@ void setupBuffers();
 void createAndGenerateTexture();
 
 void interpolationValueControls();
+
+FrameTimer frameTimer;
 
 VAO vao1, vao2;
 VBO vbo1, vbo2;
@@ -76,6 +82,7 @@ int main() {
     setupBuffers();
     createAndGenerateTexture();
 
+
     shaderProgram2.use();
     shaderProgram2.setInt("texture1", 0);
     // need to specify which texture unit each uniform sampler (sample2D) belongs to
@@ -84,9 +91,8 @@ int main() {
     //glm::mat4 model(1.0f); // identity matrix
     //model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f)); // Model matrix, rotate around the x-axis
 
-    auto view = glm::mat4(1.0f); // identity matrix
-    view = translate(view, glm::vec3(0.0f, 0.0f, -5.0f)); // View matrix
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f), SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
+    //    glm::mat4 view = glm::mat4(1.0f); // identity matrix
+    // view = translate(view, glm::vec3(0.0f, 0.0f, -5.0f)); // View matrix
 
     glm::vec3 cubePositions[] = {
         glm::vec3( 0.0f,  0.0f,  0.0f),
@@ -101,46 +107,33 @@ int main() {
         glm::vec3(-1.3f,  1.0f, -1.5f)
     };
 
-    double lastTime = glfwGetTime();
-    int nbFrames = 0;
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
+
+    glm::mat4 view;
+
     // render loop
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        frameTimer.update();
         glm::mat4 model(1.0f);
-
-        int modelLocation = shaderProgram2.getUniformLocation("model");
-        glUniformMatrix4fv(modelLocation, 1, GL_FALSE, glm::value_ptr(model));
-        int viewLocation = shaderProgram2.getUniformLocation("view");
-        glUniformMatrix4fv(viewLocation, 1, GL_FALSE, glm::value_ptr(view));
-        int projectionLocation = shaderProgram2.getUniformLocation("projection");
-        glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, glm::value_ptr(projection));
+        view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 
         for (GLuint i = 0; i < 10; i++) {
-            auto model = glm::mat4(1.0f);
+            model = glm::mat4(1.0f);
 
             model = glm::translate(model, cubePositions[i]);
-            float angle = 20.0f * i;
 
             if (i % 3 == 0) {
                 model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
                 //model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
             }
+            shaderProgram2.setMat4("projection", projection);
+            shaderProgram2.setMat4("view", view);
             shaderProgram2.setMat4("model", model);
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
-
-        double currentTime = glfwGetTime();
-        nbFrames++;
-        if ( currentTime - lastTime >= 1.0 ){ // If last prinf() was more than 1 sec ago
-            // printf and reset timer
-            printf("%f ms/frame\n", 1000.0/double(nbFrames));
-            nbFrames = 0;
-            lastTime += 1.0;
-        }
-
-
         glfwPollEvents(); // checks for keyboard input, mouse movement events etc
         glfwSwapBuffers(window);
     }
@@ -283,7 +276,7 @@ void toggleWireframeMode() {
 }
 
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
-    if (key == GLFW_KEY_W && action == GLFW_PRESS) {
+    if (key == GLFW_KEY_F && action == GLFW_PRESS) {
         toggleWireframeMode();
     }
 }
@@ -329,12 +322,25 @@ void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GL
 }
 
 
-float currentInterpolationValue = 0.2f;
 
 void processInput(GLFWwindow *window) {
+    static float currentInterpolationValue = 0.2f;
+
+    const float cameraSpeed = 4.0f * frameTimer.getDeltaTime();
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        cameraPos += cameraSpeed * cameraFront;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        cameraPos -= cameraSpeed * cameraFront;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+
+
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
+
     if (currentInterpolationValue >= 1.0f) {
         currentInterpolationValue = 1.0f;
     } else if (currentInterpolationValue <= 0.0f) {

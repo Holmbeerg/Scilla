@@ -14,8 +14,8 @@ find_package(glfw3 3.3 REQUIRED)
 add_executable(opengl_project
         src/main.cpp
         glad/glad.c
-        src/shader.h
-        src/shader.cpp
+        src/Shader.h
+        src/Shader.cpp
         stb/stb_image.cpp
         src/VAO.cpp
         src/VAO.h
@@ -24,7 +24,12 @@ add_executable(opengl_project
         src/EBO.cpp
         src/EBO.h
         src/Texture.cpp
-        src/Texture.h)
+        src/Texture.h
+        src/Camera.cpp
+        src/Camera.h
+        src/FrameTimer.cpp
+        src/FrameTimer.h
+)
 
 target_include_directories(opengl_project PRIVATE
         ${CMAKE_SOURCE_DIR}
