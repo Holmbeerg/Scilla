@@ -34,7 +34,6 @@ void VAO::setAttribFormat(GLuint index, GLint size, GLenum type, GLboolean norma
     glVertexArrayAttribBinding(m_vaoID, index, bindingIndex);
 }
 
-
 [[nodiscard]] GLuint VAO::getID() const {
     return m_vaoID;
 }

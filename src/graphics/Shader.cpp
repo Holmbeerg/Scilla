@@ -69,37 +69,51 @@ void Shader::use() const {
     glUseProgram(m_shaderID);
 }
 
-
-
 void Shader::setBool(const std::string &name, const bool value) const {
-    glUniform1i(glGetUniformLocation(m_shaderID, name.c_str()), (int) value); // 1 int
+    glUniform1i(getUniformLocation(name), static_cast<int>(value));
 }
 
 void Shader::setInt(const std::string &name, const int value) const {
-    glUniform1i(glGetUniformLocation(m_shaderID, name.c_str()), value);
+    glUniform1i(getUniformLocation(name), value);
 }
 
 void Shader::setFloat(const std::string &name, const float value) const {
-    glUniform1f(glGetUniformLocation(m_shaderID, name.c_str()), value); // 1 float
+    glUniform1f(getUniformLocation(name), value);
+}
+
+void Shader::setVec3(const std::string &name, const glm::vec3 &value) const {
+    glUniform3f(getUniformLocation(name), value.x, value.y, value.z);
 }
 
 void Shader::setVec4(const std::string &name, const glm::vec4 &value) const {
-    glUniform4f(glGetUniformLocation(m_shaderID, name.c_str()), value.x, value.y, value.z, value.w);
+    glUniform4f(getUniformLocation(name), value.x, value.y, value.z, value.w);
 }
 
 void Shader::setMat4(const std::string &name, const glm::mat4 &value) const {
-    const GLint location = glGetUniformLocation(m_shaderID, name.c_str());
-    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
+    glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, value_ptr(value));
 }
+
 
 GLuint Shader::getId() const {
     return m_shaderID;
 }
 
 int Shader::getUniformLocation(const std::string &name) const {
-    return glGetUniformLocation(m_shaderID, name.c_str());
+    auto it = m_uniformLocations.find(name);
+    if (it != m_uniformLocations.end()) {
+        return it->second;
+    }
+    // fallback
+    GLint location = glGetUniformLocation(m_shaderID, name.c_str());
+    m_uniformLocations[name] = location;
+    return location;
 }
 
+void Shader::initializeUniformLocations(const std::vector<std::string> &uniformNames) const { // caching uniform locations
+        for (const auto &name : uniformNames) {
+            m_uniformLocations[name] = glGetUniformLocation(m_shaderID, name.c_str());
+        }
+}
 
 void Shader::checkCompileErrors(const unsigned int shader, const std::string &type) {
     int success;

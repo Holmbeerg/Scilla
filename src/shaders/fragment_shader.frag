@@ -1,9 +1,9 @@
-// left triangle (small one)
 #version 460 core
 out vec4 FragColor;
-uniform vec4 ourColor;  //color passed as uniform from code
-in vec3 vertPos;
+
+uniform vec3 objectColor;
+uniform vec3 lightColor;
 
 void main() {
-    FragColor = vec4(vertPos, 1.0);  // use the uniform color instead of per-vertex color
+    FragColor = vec4(lightColor * objectColor, 1.0);
 }

@@ -17,3 +17,6 @@ glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 glm::vec3 cameraRight = glm::normalize(glm::cross(up, cameraDirection));
 glm::vec3 cameraUp = glm::cross(cameraRight, cameraDirection);
 
+texelFetch() glsl
+
+https://www.reddit.com/r/opengl/comments/1bwsh8b/why_does_gluseprogram_need_to_be_called_before/ glGetUniformLocation, glUniform*

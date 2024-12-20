@@ -5,6 +5,8 @@ https://open.gl/
 https://www.tomdalling.com/blog/modern-opengl/explaining-homogenous-coordinates-and-projective-geometry/
 https://www.youtube.com/@VictorGordan/videos
 https://www.youtube.com/@code-imposter
+https://www.youtube.com/@GajatixStudios/videos
+
 https://github.com/fendevel/Guide-to-Modern-OpenGL-Functions
 
 C++:

@@ -47,30 +47,39 @@ void Camera::updateView() {
     m_direction.x = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
     m_direction.y = sin(glm::radians(m_pitch));
     m_direction.z = -cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
-    m_cameraFront = glm::normalize(m_direction);
+    m_cameraFront = normalize(m_direction);
 
-    m_cameraRight = glm::normalize(glm::cross(m_cameraFront, m_worldUp));
-    m_cameraUp = glm::cross(m_cameraRight, m_cameraFront);
+    m_cameraRight = normalize(cross(m_cameraFront, m_worldUp));
+    m_cameraUp = cross(m_cameraRight, m_cameraFront);
 
-    m_view = glm::lookAt(m_cameraPos, m_cameraPos + m_cameraFront, m_cameraUp);
+    m_view = lookAt(m_cameraPos, m_cameraPos + m_cameraFront, m_cameraUp);
 }
 
 void Camera::processInput(GLFWwindow *window, const float deltaTime) {
-    const float cameraSpeed = m_speed * deltaTime;
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        m_cameraPos += cameraSpeed * m_cameraFront;
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        m_cameraPos -= cameraSpeed * m_cameraFront;
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        m_cameraPos -= glm::normalize(glm::cross(m_cameraFront, m_cameraUp)) * cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        m_cameraPos += glm::normalize(glm::cross(m_cameraFront, m_cameraUp)) * cameraSpeed;
+    float cameraSpeed = m_speed * deltaTime;
 
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+        cameraSpeed *= 3.0f;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        m_cameraPos += cameraSpeed * m_cameraFront;
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        m_cameraPos -= cameraSpeed * m_cameraFront;
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        m_cameraPos -= normalize(cross(m_cameraFront, m_cameraUp)) * cameraSpeed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        m_cameraPos += normalize(cross(m_cameraFront, m_cameraUp)) * cameraSpeed;
+    }
     updateView();
 }
 
 void Camera::processScroll(double xoffset, double yoffset) {
     m_fov -= static_cast<float>(yoffset);
+
     if (m_fov < 1.0f) {
         m_fov = 1.0f;
     }
@@ -86,5 +95,3 @@ float Camera::getFov() const {
 glm::mat4 Camera::getViewMatrix() const {
     return m_view;
 }
-
-

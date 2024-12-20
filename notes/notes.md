@@ -881,3 +881,26 @@ There are 3 **Euler angles**: **pitch**, **yaw**, and **roll**.
 
 **Roll** represents how much we roll.
 
+## Lighting
+
+The color of an object we see in real life is not the color it actually has, but is the color **reflected** from the object. The colors that 
+aren't absorbed (rejected) by the object is the color we perceive of it.
+
+```
+glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
+glm::vec3 toyColor(1.0f, 0.5f, 0.31f);
+glm::vec3 result = lightColor * toyColor; // = (1.0f, 0.5f, 0.31f);
+```
+
+We can see that the toy's color absorbs a large portion of the white light, but reflects several red, green and blue values based on its own color value. This is a representation of how colors would work in real life. 
+We can thus define an object's color as the amount of each color component it reflects from a light source
+
+If we used a green light:
+```
+glm::vec3 lightColor(0.0f, 1.0f, 0.0f);
+glm::vec3 toyColor(1.0f, 0.5f, 0.31f);
+glm::vec3 result = lightColor * toyColor; // = (0.0f, 0.5f, 0.0f);
+```
+
+As we can see, the toy has no red and blue light to absorb and/or reflect. The toy also absorbs half of the light's green value, 
+but also reflects half of the light's green value. The toy's color we perceive would then be a dark-greenish color

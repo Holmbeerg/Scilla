@@ -40,17 +40,19 @@ void createAndGenerateTexture();
 
 void interpolationValueControls();
 
+void drawCube(const VAO &vao);
+
 FrameTimer frameTimer;
 Camera camera;
 
-VAO vao1, vao2;
+VAO lightSourceVao, objectVao;
 VBO vbo1, vbo2;
 EBO ebo1;
 
-Texture containerTexture, smileyTexture;
+Texture containerTexture, hedgehogTexture;
 
-Shader shaderProgram1;
-Shader shaderProgram2;
+Shader objectShader;
+Shader lightSourceShader;
 
 int main() {
     glfwInit();
@@ -86,10 +88,9 @@ int main() {
 
     InputHandler input_handler(window);
 
-    shaderProgram2.use();
-    // need to specify which texture unit each uniform sampler (sample2D) belongs to
-    shaderProgram2.setInt("texture1", 0);
-    shaderProgram2.setInt("texture2", 1);
+    glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+    glm::vec3 toyColor = glm::vec3(1.0f, 0.5f, 0.31f);
+    glm::vec3 result = lightColor * toyColor;
 
     glm::vec3 cubePositions[] = {
         glm::vec3( 0.0f,  0.0f,  0.0f),
@@ -104,30 +105,54 @@ int main() {
         glm::vec3(-1.3f,  1.0f, -1.5f)
     };
 
+    const std::vector<std::string> locationUniforms = {
+        "projection",
+        "view",
+        "model",
+    };
+
+    const std::vector<std::string> objectLight = {
+    "lightColor",
+    "objectColor",
+    };
+
+    objectShader.initializeUniformLocations(locationUniforms);
+    objectShader.initializeUniformLocations(objectLight);
+    lightSourceShader.initializeUniformLocations(locationUniforms);
+
     // render loop
     while (!glfwWindowShouldClose(window)) {
         camera.processInput(window, frameTimer.getDeltaTime());
         frameTimer.update();
         glm::mat4 projection = glm::perspective(glm::radians(camera.getFov()), SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
+        glm::mat4 view = camera.getViewMatrix();
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::mat4 model = glm::mat4(1.0f);
+        // Object shader
+        objectShader.use();
+        objectShader.setVec3("objectColor", toyColor);
+        objectShader.setVec3("lightColor", lightColor);
+        objectShader.setMat4("projection", projection);
+        objectShader.setMat4("view", view);
 
-        for (GLuint i = 0; i < 10; i++) {
+        glm::mat4 objectModel = glm::translate(glm::mat4(1.0f), cubePositions[0]);
+        objectShader.setMat4("model", objectModel);
 
-            model = glm::translate(model, cubePositions[i]);
+        drawCube(objectVao);
 
-            if (i % 3 == 0) {
-                // model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
-                model = glm::rotate(model, glm::radians(15.0f), glm::vec3(1.0f, 0.3f, 0.5f));
-            }
-            shaderProgram2.setMat4("projection", projection);
-            shaderProgram2.setMat4("view", camera.getViewMatrix());
-            shaderProgram2.setMat4("model", model);
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-        }
+        // Light source shader
+        lightSourceShader.use();
+        lightSourceShader.setMat4("projection", projection);
+        lightSourceShader.setMat4("view", view);
+
+        glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), cubePositions[7]);
+        lightModel = glm::scale(lightModel, glm::vec3(0.5f));
+        lightSourceShader.setMat4("model", lightModel);
+
+        drawCube(lightSourceVao);
+
         glfwPollEvents(); // checks for keyboard input, mouse movement events etc
         glfwSwapBuffers(window);
     }
@@ -135,18 +160,18 @@ int main() {
     return 0;
 }
 
-void createAndGenerateTexture() {
-    containerTexture = Texture("textures/container.jpg");
-    smileyTexture = Texture("textures/awesomeface.png");
+void drawCube(const VAO &vao) {
+    vao.bind();
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+}
 
-    containerTexture.bindToUnit(0);
-    smileyTexture.bindToUnit(1);
+void createAndGenerateTexture() {
+
 }
 
 void setupBuffers() {
-    vao1.generate();
-    vao2.generate();
-    vbo1.generate();
+    objectVao.generate();
+    lightSourceVao.generate();
     vbo2.generate();
     ebo1.generate();
 
@@ -215,49 +240,29 @@ void setupBuffers() {
         -0.5f, 0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f // top left
     };
 
-    std::cout << "Size of vertex: " << sizeof(vertex) << std::endl;
-
     const unsigned int indices[] = {
         0, 1, 3, // first triangle
         1, 2, 3, // second triangle
     };
 
-    vao1.bindVBO(vbo1, 0, sizeof(vertex));
-    // vao2.bindVBO(vbo2, 0, sizeof(vertex));
-    vao2.bindVBO(vbo2, 0, 20);
-    vao2.bindEBO(ebo1);
+    objectVao.bindVBO(vbo2, 0, 20);
+    lightSourceVao.bindVBO(vbo2, 0, 20);
+    objectVao.bindEBO(ebo1);
 
-    vbo1.setData(vertices, sizeof(vertices));
     vbo2.setData(cubeVertices, sizeof(cubeVertices));
     ebo1.setData(indices, sizeof(indices));
 
-    vao1.enableAttrib(0);
-    vao1.enableAttrib(1);
-    vao1.enableAttrib(2);
+    objectVao.enableAttrib(0);
+    objectVao.setAttribFormat(0, 3, GL_FLOAT, false, offsetof(cube, position), 0);
 
-    vao2.enableAttrib(0);
-    vao2.enableAttrib(1);
-    vao2.enableAttrib(2);
-
-    vao1.setAttribFormat(0, 3, GL_FLOAT, false, offsetof(vertex, position), 0);
-    vao1.setAttribFormat(1, 3, GL_FLOAT, false, offsetof(vertex, color), 0);
-    vao1.setAttribFormat(2, 2, GL_FLOAT, false, offsetof(vertex, texCoord), 0);
-
-    vao2.setAttribFormat(0, 3, GL_FLOAT, false, offsetof(vertex, position), 0);
-    vao2.setAttribFormat(1, 3, GL_FLOAT, false, offsetof(vertex, color), 0);
-   // vao2.setAttribFormat(2, 2, GL_FLOAT, false, offsetof(vertex, texCoord), 0);
-    vao2.setAttribFormat(2, 2, GL_FLOAT, false, offsetof(cube, texCoord), 0);
-
-
-    vao2.bind();
+    lightSourceVao.enableAttrib(0);
+    lightSourceVao.setAttribFormat(0, 3, GL_FLOAT, false, offsetof(cube, position), 0);
 }
 
 void setupShaders() {
     const std::string shaderBasePath = "shaders/";
-    // left triangle
-    shaderProgram1 = Shader(shaderBasePath + "vertex_shader.vert", shaderBasePath + "fragment_shader.frag");
-    // right triangle
-    shaderProgram2 = Shader(shaderBasePath + "vertex_shader.vert", shaderBasePath + "fragment_shader2.frag");
+    objectShader = Shader(shaderBasePath + "vertex_shader.vert", shaderBasePath + "fragment_shader.frag");
+    lightSourceShader = Shader(shaderBasePath + "vertex_shader.vert", shaderBasePath + "lightSource.frag");
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {

@@ -1,5 +1,7 @@
 #include "InputHandler.h"
 
+#include <iostream>
+
 InputHandler::InputHandler(GLFWwindow *window)
     : m_window(window)
       , m_wireframeMode(false) {
