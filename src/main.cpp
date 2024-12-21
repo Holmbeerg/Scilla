@@ -111,13 +111,18 @@ int main() {
         "model",
     };
 
-    const std::vector<std::string> objectLight = {
+    const std::vector<std::string> objectLightUniforms = {
     "lightColor",
     "objectColor",
+        "lightPos", // ? needed
+        "viewPos",
     };
 
+
+    constexpr glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+
     objectShader.initializeUniformLocations(locationUniforms);
-    objectShader.initializeUniformLocations(objectLight);
+    objectShader.initializeUniformLocations(objectLightUniforms);
     lightSourceShader.initializeUniformLocations(locationUniforms);
 
     // render loop
@@ -136,8 +141,11 @@ int main() {
         objectShader.setVec3("lightColor", lightColor);
         objectShader.setMat4("projection", projection);
         objectShader.setMat4("view", view);
+        objectShader.setVec3("lightPos", lightPos);
+        objectShader.setVec3("viewPos", camera.getCameraPos());
 
-        glm::mat4 objectModel = glm::translate(glm::mat4(1.0f), cubePositions[0]);
+        //glm::mat4 objectModel = glm::translate(glm::mat4(1.0f), cubePositions[0]);
+        glm::mat4 objectModel = glm::mat4(1.0f);
         objectShader.setMat4("model", objectModel);
 
         drawCube(objectVao);
@@ -146,9 +154,9 @@ int main() {
         lightSourceShader.use();
         lightSourceShader.setMat4("projection", projection);
         lightSourceShader.setMat4("view", view);
-
-        glm::mat4 lightModel = glm::translate(glm::mat4(1.0f), cubePositions[7]);
-        lightModel = glm::scale(lightModel, glm::vec3(0.5f));
+        glm::mat4 lightModel = glm::mat4(1.0f);
+        lightModel = translate(lightModel, lightPos);
+        lightModel = scale(lightModel, glm::vec3(0.5f));
         lightSourceShader.setMat4("model", lightModel);
 
         drawCube(lightSourceVao);
@@ -183,61 +191,53 @@ void setupBuffers() {
 
     struct cube {
         glm::vec3 position;
-        glm::vec2 texCoord;
+        glm::vec3 normal;
     };
 
     std::cout << offsetof(vertex, texCoord) << std::endl;
 
     float cubeVertices[] = {
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
 
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
 
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
 
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
 
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
 
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-    };
-
-    constexpr float vertices[] = {
-        // positions          // colors           // texture coords
-        0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top right
-        0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom right
-        -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom left
-        -0.5f, 0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f // top left
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
     };
 
     const unsigned int indices[] = {
@@ -245,15 +245,17 @@ void setupBuffers() {
         1, 2, 3, // second triangle
     };
 
-    objectVao.bindVBO(vbo2, 0, 20);
-    lightSourceVao.bindVBO(vbo2, 0, 20);
+    objectVao.bindVBO(vbo2, 0, 24);
+    lightSourceVao.bindVBO(vbo2, 0, 24);
     objectVao.bindEBO(ebo1);
 
     vbo2.setData(cubeVertices, sizeof(cubeVertices));
     ebo1.setData(indices, sizeof(indices));
 
     objectVao.enableAttrib(0);
+    objectVao.enableAttrib(1);
     objectVao.setAttribFormat(0, 3, GL_FLOAT, false, offsetof(cube, position), 0);
+    objectVao.setAttribFormat(1, 3, GL_FLOAT, false, offsetof(cube, normal), 0);
 
     lightSourceVao.enableAttrib(0);
     lightSourceVao.setAttribFormat(0, 3, GL_FLOAT, false, offsetof(cube, position), 0);

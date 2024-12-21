@@ -88,6 +88,10 @@ void Camera::processScroll(double xoffset, double yoffset) {
     }
 }
 
+glm::vec3 Camera::getCameraPos() const {
+    return m_cameraPos;
+}
+
 float Camera::getFov() const {
     return m_fov;
 }

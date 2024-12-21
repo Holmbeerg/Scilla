@@ -5,8 +5,8 @@ https://open.gl/
 https://www.tomdalling.com/blog/modern-opengl/explaining-homogenous-coordinates-and-projective-geometry/
 https://www.youtube.com/@VictorGordan/videos
 https://www.youtube.com/@code-imposter
-https://www.youtube.com/@GajatixStudios/videos
-
+https://www.youtube.com/@GajatixStudios/
+https://www.youtube.com/watch?v=40JzyaOYJeY (optimizations)
 https://github.com/fendevel/Guide-to-Modern-OpenGL-Functions
 
 C++:
@@ -20,6 +20,7 @@ http://matrixmultiplication.xyz/
 
 cool stuff:
 https://auburn.github.io/FastNoiseLite/
+https://jbaker.graphics/writings/DEC.html
 https://github.com/cgerikj/binary-greedy-meshing
 https://github.com/GTruf/SolarSystem-3D
 https://www.youtube.com/@3DProgramming/videos
@@ -31,3 +32,4 @@ Project didn't build: delete cmake-build-debug, delete .idea, rebuild
 
 Shaders:
 https://www.khronos.org/opengl/wiki/SPIR-V can use SPIR-V in OpenGL too and not just Vulkan
+https://en.wikipedia.org/wiki/Gouraud_shading

@@ -20,3 +20,45 @@ glm::vec3 cameraUp = glm::cross(cameraRight, cameraDirection);
 texelFetch() glsl
 
 https://www.reddit.com/r/opengl/comments/1bwsh8b/why_does_gluseprogram_need_to_be_called_before/ glGetUniformLocation, glUniform*
+
+Ambient light
+void main()
+{
+    float ambientStrength = 0.1;
+    vec3 ambient = ambientStrength * lightColor;
+
+    vec3 result = ambient * objectColor;
+    FragColor = vec4(result, 1.0);
+}
+
+Any out parameter will be interpolated over the resulting triangle.
+gives world space position of aPos, The fragPos will be interpolated across the surface of the primitive being rendered (e.g., a triangle), allowing each fragment (pixel)
+to have the correct world space position:
+fragPos = vec3(model * vec4(aPos, 1.0));
+
+The reflect function expects the first vector to point from the light source towards the fragment's position, but the lightDir vector is currently pointing the other way around
+so negate it.
+vec3 reflectDir = reflect(-lightDir, norm);
+
+Phone reflection model, https://en.wikipedia.org/wiki/Phong_reflection_model
+void main() {
+    float ambientStrength = 0.2;
+    vec3 ambient = ambientStrength * lightColor;
+
+    vec3 norm = normalize(normal);
+    vec3 lightDir = normalize(lightPos - fragPos);
+
+    float diff = max(dot(norm, lightDir), 0.0); // if angle is greater than 90 it will become negative, therefore we use max and add 0.0
+    vec3 diffuse = diff * lightColor;
+
+    float specularStrength = 0.5;
+    vec3 viewDir = normalize(viewPos - fragPos);
+    vec3 reflectDir = reflect(-lightDir, norm);
+
+    // 32 is the shininess value of the highlight
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
+    vec3 specular = specularStrength * spec * lightColor;
+
+    vec3 result = (ambient + diffuse) * objectColor;
+    FragColor = vec4(result, 1.0);
+}

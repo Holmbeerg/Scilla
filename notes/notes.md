@@ -904,3 +904,61 @@ glm::vec3 result = lightColor * toyColor; // = (0.0f, 0.5f, 0.0f);
 
 As we can see, the toy has no red and blue light to absorb and/or reflect. The toy also absorbs half of the light's green value, 
 but also reflects half of the light's green value. The toy's color we perceive would then be a dark-greenish color
+
+## Lighting models
+
+When these calculations are done in the fragment shader, it is called **Phong reflection model**, if they are done in the vertex shader it is called the **Gouraud** shading model.
+
+**Phong** produces a more detailed result, but **Gouraud** is more efficient, since it is calculated per vertex instead of per fragment.
+
+**Gouraud** gives a more blocky look and **Phong** smoother.
+
+![](https://opengl-notes.readthedocs.io/en/latest/_images/flat-gouraud-phong.png)
+
+**Ambient lighting**: In real life, objects are almost never completely dark (moon, distant light etc). To simulate this we use an ambient lighting constant that always gives the object some color.
+
+**Diffuse lighting**: The directional impact light has on an object, The more a part of an object faces the light source, the brighter it becomes.
+Diffuse lighting gives the object more brightness the closer its fragments are aligned to the light rays from a light source
+
+![](https://learnopengl.com/img/lighting/diffuse_light.png)
+
+A light source with a light ray targeted at a single fragment of our object. 
+To measure the angle between the light ray and the fragment we use something called a normal vector, 
+that is a vector perpendicular to the fragment's surface (here depicted as a yellow arrow). 
+
+The angle between the two vectors can then easily be calculated with the dot product.
+The larger θ becomes, the less of an impact the light should have on the fragment's color.
+
+Note that to get (only) the cosine of the angle between both vectors we will work with unit vectors (vectors of length 1) so we need to make sure all the vectors are normalized, otherwise the dot product returns more than just the cosine (magnitude included in calculations).
+The resulting dot product thus returns a scalar that we can use to calculate the light's impact on the fragment's color, resulting in differently lit fragments based on their orientation towards the light
+
+**Specular lighting**: Simulates the bright spot of a light that appears on shiny objects.
+
+![](https://learnopengl.com/img/lighting/basic_lighting_specular_theory.png)
+
+Similar to diffuse lighting, **specular lighting** is based on the **light's direction vector** and the **object's normal vectors**, but this time it is also based on the **view direction** e.g. from what direction the player is looking at the fragment.
+
+**Specular lighting** is based on the reflective properties of surfaces.
+
+If we think of the object's surface as a mirror, the **specular lighting** is the strongest wherever we would see the light reflected on the surface.
+
+Reflect the light direction around the normal vector, then calculate the angular distance between this reflection vector and the view direction.
+
+View vector can be calculated by using viewer's world space position and the fragments position. 
+
+We chose to do the lighting calculations in world space, but most people tend to prefer doing lighting in view space. An advantage of view space is that the viewer's position is always at (0,0,0) 
+so you already got the position of the viewer for free.
+
+## Normal vector
+A **normal vector** is a (unit) vector that is **perpendicular to the surface of a vertex**.
+Since a vertex by itself has no surface (it's just a single point in space) we retrieve a normal vector by using its surrounding vertices to figure out the surface of the vertex.
+
+We can use a little trick to calculate the normal vectors for all the cube's vertices by using the cross product, but since a 3D cube is not a complicated shape we can simply manually add them to the vertex data.
+
+![](https://mathworld.wolfram.com/images/eps-svg/NormalVector_700.svg)
+
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Normal_vectors_on_a_curved_surface.svg/1920px-Normal_vectors_on_a_curved_surface.svg.png)
+
+when doing lighting calculations, make sure you always normalize the relevant vectors to ensure they're actual unit vectors. Forgetting to normalize a vector is a popular mistake.
+
+
