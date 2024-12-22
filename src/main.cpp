@@ -49,7 +49,10 @@ VAO lightSourceVao, objectVao;
 VBO vbo1, vbo2;
 EBO ebo1;
 
-Texture containerTexture, hedgehogTexture;
+Texture containerTexture, containerSpecularTexture;
+
+constexpr int DIFFUSE_TEXTURE_UNIT = 0;
+constexpr int SPECULAR_TEXTURE_UNIT = 1;
 
 Shader objectShader;
 Shader lightSourceShader;
@@ -88,42 +91,40 @@ int main() {
 
     InputHandler input_handler(window);
 
-    glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
-    glm::vec3 toyColor = glm::vec3(1.0f, 0.5f, 0.31f);
-    glm::vec3 result = lightColor * toyColor;
-
-    glm::vec3 cubePositions[] = {
-        glm::vec3( 0.0f,  0.0f,  0.0f),
-        glm::vec3( 2.0f,  5.0f, -15.0f),
-        glm::vec3(-1.5f, -2.2f, -2.5f),
-        glm::vec3(-3.8f, -2.0f, -12.3f),
-        glm::vec3( 2.4f, -0.4f, -3.5f),
-        glm::vec3(-1.7f,  3.0f, -7.5f),
-        glm::vec3( 1.3f, -2.0f, -2.5f),
-        glm::vec3( 1.5f,  2.0f, -2.5f),
-        glm::vec3( 1.5f,  0.2f, -1.5f),
-        glm::vec3(-1.3f,  1.0f, -1.5f)
-    };
-
-    const std::vector<std::string> locationUniforms = {
+    const std::vector<std::string> vertexUniforms = {
         "projection",
         "view",
         "model",
+        "normalMatrix"
     };
 
     const std::vector<std::string> objectLightUniforms = {
-    "lightColor",
-    "objectColor",
-        "lightPos", // ? needed
         "viewPos",
+        "material",
+        "light",
     };
 
+    glm::vec3 lightPos = glm::vec3(1.2f, 1.0f, 2.0f);
 
-    constexpr glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+    Shader::Light light {
+        lightPos,
+        glm::vec3(0.2f, 0.2f, 0.2f),
+        glm::vec3(0.5f, 0.5f, 0.5f),
+        glm::vec3(1.0f, 1.0f, 1.0f)
+    };
 
-    objectShader.initializeUniformLocations(locationUniforms);
+    Shader::Material material {
+        64.0f
+    };
+
+    objectShader.initializeUniformLocations(vertexUniforms);
     objectShader.initializeUniformLocations(objectLightUniforms);
-    lightSourceShader.initializeUniformLocations(locationUniforms);
+    lightSourceShader.initializeUniformLocations(vertexUniforms);
+    objectShader.use();
+    objectShader.setLightProperties(light);
+    objectShader.setMaterialProperties(material);
+    objectShader.setInt("material.diffuse", DIFFUSE_TEXTURE_UNIT);
+    objectShader.setInt("material.specular", SPECULAR_TEXTURE_UNIT);
 
     // render loop
     while (!glfwWindowShouldClose(window)) {
@@ -131,30 +132,29 @@ int main() {
         frameTimer.update();
         glm::mat4 projection = glm::perspective(glm::radians(camera.getFov()), SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = camera.getViewMatrix();
+        glm::mat4 lightModel = glm::mat4(1.0f);
+        glm::mat4 objectModel = glm::mat4(1.0f);
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Object shader
         objectShader.use();
-        objectShader.setVec3("objectColor", toyColor);
-        objectShader.setVec3("lightColor", lightColor);
-        objectShader.setMat4("projection", projection);
-        objectShader.setMat4("view", view);
-        objectShader.setVec3("lightPos", lightPos);
+        objectShader.setViewProjection(view, projection);
         objectShader.setVec3("viewPos", camera.getCameraPos());
 
-        //glm::mat4 objectModel = glm::translate(glm::mat4(1.0f), cubePositions[0]);
-        glm::mat4 objectModel = glm::mat4(1.0f);
+        glm::mat3 normalMatrix = glm::mat3(transpose(inverse(objectModel)));
         objectShader.setMat4("model", objectModel);
+        objectShader.setMat3("normalMatrix", normalMatrix);
 
         drawCube(objectVao);
 
         // Light source shader
         lightSourceShader.use();
-        lightSourceShader.setMat4("projection", projection);
-        lightSourceShader.setMat4("view", view);
-        glm::mat4 lightModel = glm::mat4(1.0f);
+        lightSourceShader.setViewProjection(view, projection);
+
+        normalMatrix = glm::mat3(transpose(inverse(lightModel)));
+        lightSourceShader.setMat3("normalMatrix", normalMatrix);
         lightModel = translate(lightModel, lightPos);
         lightModel = scale(lightModel, glm::vec3(0.5f));
         lightSourceShader.setMat4("model", lightModel);
@@ -174,7 +174,10 @@ void drawCube(const VAO &vao) {
 }
 
 void createAndGenerateTexture() {
-
+    containerTexture = Texture("textures/container2.png");
+    containerSpecularTexture = Texture("textures/container2_specular.png");
+    containerTexture.bindToUnit(DIFFUSE_TEXTURE_UNIT);
+    containerSpecularTexture.bindToUnit(SPECULAR_TEXTURE_UNIT);
 }
 
 void setupBuffers() {
@@ -183,82 +186,80 @@ void setupBuffers() {
     vbo2.generate();
     ebo1.generate();
 
-    struct vertex {
-        glm::vec3 position;
-        glm::vec3 color;
-        glm::vec2 texCoord;
-    };
-
     struct cube {
         glm::vec3 position;
         glm::vec3 normal;
+        glm::vec2 texCoord;
     };
-
-    std::cout << offsetof(vertex, texCoord) << std::endl;
 
     float cubeVertices[] = {
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+    // positions          // normals           // texture coords
+    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
+     0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
 
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
 
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
 
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
 
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
-    };
+    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
+};
 
     const unsigned int indices[] = {
         0, 1, 3, // first triangle
         1, 2, 3, // second triangle
     };
 
-    objectVao.bindVBO(vbo2, 0, 24);
-    lightSourceVao.bindVBO(vbo2, 0, 24);
+    objectVao.bindVBO(vbo2, 0, sizeof(cube));
+    lightSourceVao.bindVBO(vbo2, 0, sizeof(cube));
     objectVao.bindEBO(ebo1);
 
     vbo2.setData(cubeVertices, sizeof(cubeVertices));
     ebo1.setData(indices, sizeof(indices));
 
-    objectVao.enableAttrib(0);
-    objectVao.enableAttrib(1);
     objectVao.setAttribFormat(0, 3, GL_FLOAT, false, offsetof(cube, position), 0);
     objectVao.setAttribFormat(1, 3, GL_FLOAT, false, offsetof(cube, normal), 0);
+    objectVao.setAttribFormat(2, 2, GL_FLOAT, false, offsetof(cube, texCoord), 0);
+    objectVao.enableAttrib(0);
+    objectVao.enableAttrib(1);
+    objectVao.enableAttrib(2);
 
     lightSourceVao.enableAttrib(0);
     lightSourceVao.setAttribFormat(0, 3, GL_FLOAT, false, offsetof(cube, position), 0);
+
+    objectVao.bind();
 }
 
 void setupShaders() {

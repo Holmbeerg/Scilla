@@ -4,6 +4,7 @@ https://learnopengl.com
 https://open.gl/
 https://www.tomdalling.com/blog/modern-opengl/explaining-homogenous-coordinates-and-projective-geometry/
 https://www.youtube.com/@VictorGordan/videos
+https://www.youtube.com/@OGLDEV
 https://www.youtube.com/@code-imposter
 https://www.youtube.com/@GajatixStudios/
 https://www.youtube.com/watch?v=40JzyaOYJeY (optimizations)
@@ -17,6 +18,7 @@ https://www.rapidtables.com/convert/color/hex-to-rgb.html
 https://www.khanacademy.org/math/linear-algebra/matrix-transformations
 https://youtu.be/rHLEWRxRGiM
 http://matrixmultiplication.xyz/
+http://immersivemath.com/ila/index.html
 
 cool stuff:
 https://auburn.github.io/FastNoiseLite/
@@ -31,5 +33,6 @@ https://cliutils.gitlab.io/modern-cmake/README.html
 Project didn't build: delete cmake-build-debug, delete .idea, rebuild
 
 Shaders:
+https://thebookofshaders.com/
 https://www.khronos.org/opengl/wiki/SPIR-V can use SPIR-V in OpenGL too and not just Vulkan
 https://en.wikipedia.org/wiki/Gouraud_shading

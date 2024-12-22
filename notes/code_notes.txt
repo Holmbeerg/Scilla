@@ -53,7 +53,7 @@ void main() {
 
     float specularStrength = 0.5;
     vec3 viewDir = normalize(viewPos - fragPos);
-    vec3 reflectDir = reflect(-lightDir, norm);
+    vec3 reflectDir = reflect(-lightDir, norm); // calculate reflection
 
     // 32 is the shininess value of the highlight
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
@@ -62,3 +62,10 @@ void main() {
     vec3 result = (ambient + diffuse) * objectColor;
     FragColor = vec4(result, 1.0);
 }
+
+circular motion
+float radius = 5.0f;
+float time = glfwGetTime();
+float x = sin(time) * radius;
+float z = cos(time) * radius;
+float y = 0.0f;

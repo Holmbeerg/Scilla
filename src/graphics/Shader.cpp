@@ -93,6 +93,26 @@ void Shader::setMat4(const std::string &name, const glm::mat4 &value) const {
     glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, value_ptr(value));
 }
 
+void Shader::setMat3(const std::string &name, const glm::mat3 &value) const {
+    glUniformMatrix3fv(getUniformLocation(name), 1, GL_FALSE, value_ptr(value));
+}
+
+void Shader::setLightProperties(const Light &light) const {
+    setVec3("light.position", light.position);
+    setVec3("light.ambient", light.ambient); // needs to be lowercase
+    setVec3("light.diffuse", light.diffuse);
+    setVec3("light.specular", light.specular);
+}
+
+void Shader::setMaterialProperties(const Material &material) const {
+    setFloat("material.shininess", material.shininess);
+}
+
+void Shader::setViewProjection(const glm::mat4& view, const glm::mat4& projection) const {
+    setMat4("projection", projection);
+    setMat4("view", view);
+}
+
 
 GLuint Shader::getId() const {
     return m_shaderID;

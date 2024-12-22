@@ -31,6 +31,10 @@ add_executable(opengl_project
         src/utils/FrameTimer.h
         src/input/InputHandler.cpp
         src/input/InputHandler.h
+        src/graphics/Model.cpp
+        src/graphics/Model.h
+        src/graphics/Mesh.cpp
+        src/graphics/Mesh.h
 )
 
 target_include_directories(opengl_project PRIVATE

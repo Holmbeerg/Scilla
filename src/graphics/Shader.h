@@ -9,6 +9,18 @@
 class Shader {
 
 public:
+    struct Light {
+        glm::vec3 position;
+
+        glm::vec3 ambient;
+        glm::vec3 diffuse;
+        glm::vec3 specular;
+    };
+
+    struct Material {
+        float shininess;
+    };
+
     // constructor reads and builds the shader
     Shader(const std::string& vertexPath, const std::string& fragmentPath);
 
@@ -29,6 +41,14 @@ public:
     void setFloat(const std::string &name, float value) const;
 
     void setMat4(const std::string &name, const glm::mat4 &value) const;
+
+    void setMat3(const std::string &name, const glm::mat3 &value) const;
+
+    void setLightProperties(const Light &light) const;
+
+    void setMaterialProperties(const Material &material) const;
+
+    void setViewProjection(const glm::mat4& view, const glm::mat4& projection) const;
 
     [[nodiscard]] GLuint getId() const;
 
