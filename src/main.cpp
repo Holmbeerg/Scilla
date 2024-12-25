@@ -51,8 +51,10 @@ EBO ebo1;
 
 Texture containerTexture, containerSpecularTexture;
 
-constexpr int DIFFUSE_TEXTURE_UNIT = 0;
-constexpr int SPECULAR_TEXTURE_UNIT = 1;
+enum class TextureUnit {
+    DIFFUSE = 0,
+    SPECULAR = 1,
+};
 
 Shader objectShader;
 Shader lightSourceShader;
@@ -123,8 +125,8 @@ int main() {
     objectShader.use();
     objectShader.setLightProperties(light);
     objectShader.setMaterialProperties(material);
-    objectShader.setInt("material.diffuse", DIFFUSE_TEXTURE_UNIT);
-    objectShader.setInt("material.specular", SPECULAR_TEXTURE_UNIT);
+    objectShader.setInt("material.diffuse", static_cast<int>(TextureUnit::DIFFUSE));
+    objectShader.setInt("material.specular", static_cast<int>(TextureUnit::SPECULAR));
 
     // render loop
     while (!glfwWindowShouldClose(window)) {
@@ -176,8 +178,8 @@ void drawCube(const VAO &vao) {
 void createAndGenerateTexture() {
     containerTexture = Texture("textures/container2.png");
     containerSpecularTexture = Texture("textures/container2_specular.png");
-    containerTexture.bindToUnit(DIFFUSE_TEXTURE_UNIT);
-    containerSpecularTexture.bindToUnit(SPECULAR_TEXTURE_UNIT);
+    containerTexture.bindToUnit(static_cast<int>(TextureUnit::DIFFUSE));
+    containerSpecularTexture.bindToUnit(static_cast<int>(TextureUnit::SPECULAR));
 }
 
 void setupBuffers() {
