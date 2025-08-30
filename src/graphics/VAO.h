@@ -17,7 +17,7 @@ public:
 
     void bindVBO(const VBO& vbo, GLuint bindingIndex, GLsizei stride) const;
 
-    void bindEBO(EBO& ebo) const;
+    void bindEBO(const EBO& ebo) const;
 
     void enableAttrib(GLuint index) const;
 

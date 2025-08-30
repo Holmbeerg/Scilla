@@ -15,7 +15,7 @@ Camera::Camera()
     updateView();
 }
 
-void Camera::update(double xpos, double ypos) {
+void Camera::update(const double xpos, const double ypos) {
     if (m_firstMouse) {
         m_lastX = xpos;
         m_lastY = ypos;

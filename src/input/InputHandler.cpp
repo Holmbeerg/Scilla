@@ -1,6 +1,5 @@
 #include "InputHandler.h"
 
-#include <iostream>
 
 InputHandler::InputHandler(GLFWwindow *window)
     : m_window(window)
@@ -11,13 +10,13 @@ InputHandler::InputHandler(GLFWwindow *window)
     glfwSetKeyCallback(window, keyCallback);
 }
 
-void InputHandler::keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
+void InputHandler::keyCallback(GLFWwindow *window, const int key, const int scancode, const int action, const int mods) {
     if (auto *handler = static_cast<InputHandler *>(glfwGetWindowUserPointer(window))) { // Retrieve the instance pointer
         handler->handleKeyInput(key, scancode, action, mods);
     }
 }
 
-void InputHandler::handleKeyInput(int key, int scancode, int action, int mods) {
+void InputHandler::handleKeyInput(const int key, int scancode, const int action, int mods) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(m_window, true);
     }

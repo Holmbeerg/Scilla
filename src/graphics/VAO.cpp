@@ -17,7 +17,7 @@ void VAO::bindVBO(const VBO &vbo, const GLuint bindingIndex, const GLsizei strid
     glVertexArrayVertexBuffer(m_vaoID, bindingIndex, vbo.getID(), 0, stride);
 }
 
-void VAO::bindEBO(EBO &ebo) const {
+void VAO::bindEBO(const EBO &ebo) const {
     glVertexArrayElementBuffer(m_vaoID, ebo.getID());
 }
 
@@ -29,7 +29,7 @@ void VAO::disableAttrib(const GLuint index) const {
     glDisableVertexArrayAttrib(m_vaoID, index);
 }
 
-void VAO::setAttribFormat(GLuint index, GLint size, GLenum type, GLboolean normalized, GLuint offset, const GLuint bindingIndex) const {
+void VAO::setAttribFormat(const GLuint index, const GLint size, const GLenum type, const GLboolean normalized, const GLuint offset, const GLuint bindingIndex) const {
     glVertexArrayAttribFormat(m_vaoID, index, size, type, normalized, offset);
     glVertexArrayAttribBinding(m_vaoID, index, bindingIndex);
 }

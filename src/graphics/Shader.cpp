@@ -16,7 +16,8 @@ Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath) {
         vShaderFile.open(vertexPath);
         fShaderFile.open(fragmentPath);
 
-        std::stringstream vShaderStream, fShaderStream;
+        std::stringstream vShaderStream;
+        std::stringstream fShaderStream;
 
         vShaderStream << vShaderFile.rdbuf();
         fShaderStream << fShaderFile.rdbuf();
@@ -119,12 +120,11 @@ GLuint Shader::getId() const {
 }
 
 int Shader::getUniformLocation(const std::string &name) const {
-    auto it = m_uniformLocations.find(name);
-    if (it != m_uniformLocations.end()) {
+    if (const auto it = m_uniformLocations.find(name); it != m_uniformLocations.end()) {
         return it->second;
     }
     // fallback
-    GLint location = glGetUniformLocation(m_shaderID, name.c_str());
+    const GLint location = glGetUniformLocation(m_shaderID, name.c_str());
     m_uniformLocations[name] = location;
     return location;
 }

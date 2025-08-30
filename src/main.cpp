@@ -7,7 +7,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
-#include <filesystem>
+#include <utility>
+#include <utility>
 
 #include "camera/Camera.h"
 #include "graphics/Shader.h"
@@ -106,16 +107,16 @@ int main() {
         "light",
     };
 
-    glm::vec3 lightPos = glm::vec3(1.2f, 1.0f, 2.0f);
+    constexpr auto lightPos = glm::vec3(1.2f, 1.0f, 2.0f);
 
-    Shader::Light light {
+    constexpr Shader::Light light {
         lightPos,
         glm::vec3(0.2f, 0.2f, 0.2f),
         glm::vec3(0.5f, 0.5f, 0.5f),
         glm::vec3(1.0f, 1.0f, 1.0f)
     };
 
-    Shader::Material material {
+    constexpr Shader::Material material {
         64.0f
     };
 
@@ -125,17 +126,17 @@ int main() {
     objectShader.use();
     objectShader.setLightProperties(light);
     objectShader.setMaterialProperties(material);
-    objectShader.setInt("material.diffuse", static_cast<int>(TextureUnit::DIFFUSE));
-    objectShader.setInt("material.specular", static_cast<int>(TextureUnit::SPECULAR));
+    objectShader.setInt("material.diffuse", std::to_underlying(TextureUnit::DIFFUSE));
+    objectShader.setInt("material.specular", std::to_underlying(TextureUnit::SPECULAR));
 
     // render loop
     while (!glfwWindowShouldClose(window)) {
         camera.processInput(window, frameTimer.getDeltaTime());
         frameTimer.update();
-        glm::mat4 projection = glm::perspective(glm::radians(camera.getFov()), SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(camera.getFov()), SCR_WIDTH / static_cast<float>(SCR_HEIGHT), 0.1f, 100.0f);
         glm::mat4 view = camera.getViewMatrix();
-        glm::mat4 lightModel = glm::mat4(1.0f);
-        glm::mat4 objectModel = glm::mat4(1.0f);
+        auto lightModel = glm::mat4(1.0f);
+        auto objectModel = glm::mat4(1.0f);
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -145,7 +146,7 @@ int main() {
         objectShader.setViewProjection(view, projection);
         objectShader.setVec3("viewPos", camera.getCameraPos());
 
-        glm::mat3 normalMatrix = glm::mat3(transpose(inverse(objectModel)));
+        auto normalMatrix = glm::mat3(transpose(inverse(objectModel)));
         objectShader.setMat4("model", objectModel);
         objectShader.setMat3("normalMatrix", normalMatrix);
 
@@ -178,8 +179,8 @@ void drawCube(const VAO &vao) {
 void createAndGenerateTexture() {
     containerTexture = Texture("textures/container2.png");
     containerSpecularTexture = Texture("textures/container2_specular.png");
-    containerTexture.bindToUnit(static_cast<int>(TextureUnit::DIFFUSE));
-    containerSpecularTexture.bindToUnit(static_cast<int>(TextureUnit::SPECULAR));
+    containerTexture.bindToUnit(std::to_underlying(TextureUnit::DIFFUSE));
+    containerSpecularTexture.bindToUnit(std::to_underlying(TextureUnit::SPECULAR));
 }
 
 void setupBuffers() {
@@ -194,7 +195,7 @@ void setupBuffers() {
         glm::vec2 texCoord;
     };
 
-    float cubeVertices[] = {
+    const float cubeVertices[] = {
     // positions          // normals           // texture coords
     -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
      0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
