@@ -11,7 +11,7 @@ struct Light {
 };
 
 struct Material {
-    sampler2D diffuse; // sampler2D is an opaque type, cant instantiate
+    sampler2D diffuse; // sampler2D is an opaque type, cant instantiate. Tells the shader which texture unit to sample from
     sampler2D specular;
     float shininess;
 };

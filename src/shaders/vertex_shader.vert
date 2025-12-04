@@ -1,4 +1,8 @@
 // The vertex shader runs once for each vertex. Transforms vertex data from Object Space to Clip Space.
+// At the end of the vertex shader step, perspective division is automatically performed and
+// transforms the 4D Clip Space coordinates into 3D Normalized Device Coordinates (NDC).
+// These coordinates are then mapped to screen coordinates using the settings of glViewport and transformed into fragments
+// as input for the Fragment Shader.
 
 #version 460 core
 layout (location = 0) in vec3 aPos;

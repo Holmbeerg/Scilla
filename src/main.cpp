@@ -125,6 +125,8 @@ int main() {
     objectShader.use();
     objectShader.setLightProperties(light);
     objectShader.setMaterialProperties(material);
+
+    // set which texture unit each sampler should use
     objectShader.setInt("material.diffuse", std::to_underlying(TextureUnit::DIFFUSE));
     objectShader.setInt("material.specular", std::to_underlying(TextureUnit::SPECULAR));
 

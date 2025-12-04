@@ -1,6 +1,6 @@
 #include "VBO.h"
 
-#include <glad.h>
+#include <glad/glad.h>
 
 VBO::VBO()
     : m_vboID(0) { }

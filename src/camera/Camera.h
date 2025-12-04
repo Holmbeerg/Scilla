@@ -4,6 +4,14 @@
 #include <glm/glm.hpp>
 
 class Camera {
+public:
+    Camera();
+    void update(double xpos, double ypos);
+    void processInput(GLFWwindow *window, float deltaTime);
+    void processScroll(double xoffset, double yoffset);
+    [[nodiscard]] glm::vec3 getCameraPos() const;
+    [[nodiscard]] float getFov() const;
+    [[nodiscard]] glm::mat4 getViewMatrix() const;
 private:
     float m_yaw;
     float m_pitch;
@@ -24,13 +32,4 @@ private:
     glm::vec3 m_worldUp;
     glm::mat4 m_view;
     void updateView();
-
-public:
-    Camera();
-    void update(double xpos, double ypos);
-    void processInput(GLFWwindow *window, float deltaTime);
-    void processScroll(double xoffset, double yoffset);
-    [[nodiscard]] glm::vec3 getCameraPos() const;
-    [[nodiscard]] float getFov() const;
-    [[nodiscard]] glm::mat4 getViewMatrix() const;
 };

@@ -3,17 +3,25 @@ project(opengl_project)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++23")
 
 find_package(OpenGL REQUIRED)
 find_package(glfw3 3.3 REQUIRED)
+find_package(assimp REQUIRED)
+
+add_library(third_party STATIC
+        glad/glad.c
+        stb/stb_image.cpp
+)
+
+target_include_directories(third_party PUBLIC
+        ${CMAKE_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/stb
+)
 
 add_executable(opengl_project
         src/main.cpp
-        glad/glad.c
         src/graphics/Shader.h
         src/graphics/Shader.cpp
-        stb/stb_image.cpp
         src/graphics/VAO.cpp
         src/graphics/VAO.h
         src/graphics/VBO.cpp
@@ -36,10 +44,11 @@ add_executable(opengl_project
 
 target_include_directories(opengl_project PRIVATE
         ${CMAKE_SOURCE_DIR}
-        ${CMAKE_SOURCE_DIR}/glad
 )
 
 target_link_libraries(opengl_project
+        third_party
         glfw
         OpenGL::GL
-        dl)
+        dl
+        assimp::assimp)
