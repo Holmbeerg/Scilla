@@ -8,7 +8,6 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
 #include <utility>
-#include <utility>
 
 #include "camera/Camera.h"
 #include "graphics/Shader.h"
@@ -252,7 +251,7 @@ void setupBuffers() {
     vbo2.setData(cubeVertices, sizeof(cubeVertices));
     ebo1.setData(indices, sizeof(indices));
 
-    objectVao.setAttribFormat(0, 3, GL_FLOAT, false, offsetof(cube, position), 0);
+    objectVao.setAttribFormat(0, 3, GL_FLOAT, false, offsetof(cube, position), 0); // tell the VAO how to interpret the vertex data in the bound VBO
     objectVao.setAttribFormat(1, 3, GL_FLOAT, false, offsetof(cube, normal), 0);
     objectVao.setAttribFormat(2, 2, GL_FLOAT, false, offsetof(cube, texCoord), 0);
     objectVao.enableAttrib(0);

@@ -27,6 +27,7 @@ https://github.com/cgerikj/binary-greedy-meshing
 https://github.com/GTruf/SolarSystem-3D
 https://www.youtube.com/@3DProgramming/videos
 https://www.youtube.com/watch?v=wbpMiKiSKm8&list=PLFt_AvWsXl0eBW2EiBtl_sxmDtSgZBxB3
+https://www.youtube.com/@MrEscen/videos
 
 CMake:
 https://cliutils.gitlab.io/modern-cmake/README.html
@@ -34,5 +35,6 @@ Project didn't build: delete cmake-build-debug, delete .idea, rebuild
 
 Shaders:
 https://thebookofshaders.com/
+https://www.makingsoftware.com/chapters/shaders
 https://www.khronos.org/opengl/wiki/SPIR-V can use SPIR-V in OpenGL too and not just Vulkan
 https://en.wikipedia.org/wiki/Gouraud_shading

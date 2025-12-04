@@ -1,3 +1,5 @@
+// fragment shader/pixel shader, it computes color and other attributes of each pixel/fragment
+
 #version 460 core
 
 struct Light {
@@ -14,8 +16,10 @@ struct Material {
     float shininess;
 };
 
+// output color of the pixel/fragment
 out vec4 FragColor;
 
+// input data from the vertex shader
 in vec2 texCoords;
 in vec3 normal;
 in vec3 fragPos;
@@ -25,16 +29,18 @@ uniform Material material;
 uniform Light light;
 
 void main() {
-    // ambient
+    // ambient. Ambient light is constant
     vec3 ambient = light.ambient * vec3(texture(material.diffuse, texCoords));
 
-    // diffuse
+    // Implementation of Phong lighting
+
+    // diffuse. Diffuse light depends on the angle between light source and surface normal
     vec3 norm = normalize(normal);
     vec3 lightDir = normalize(light.position - fragPos);
     float diff = max(dot(norm, lightDir), 0.0);
     vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, texCoords)).rgb;
 
-    // specular
+    // specular. Specular light depends on the angle between view direction and reflection direction
     vec3 viewDir = normalize(viewPos - fragPos);
     vec3 reflectDir = reflect(-lightDir, norm);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
