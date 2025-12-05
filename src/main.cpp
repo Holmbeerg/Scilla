@@ -1,5 +1,6 @@
 #include <cmath>
 #include <complex>
+#include <filesystem>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
@@ -82,6 +83,8 @@ int main() {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
+
+    std::cout << "Working directory: " << std::filesystem::current_path() << std::endl;
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_DEBUG_OUTPUT);

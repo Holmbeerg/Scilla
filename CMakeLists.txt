@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(opengl_project)
+project(Scilla)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -18,7 +18,7 @@ target_include_directories(third_party PUBLIC
         ${CMAKE_SOURCE_DIR}/stb
 )
 
-add_executable(opengl_project
+add_executable(scilla
         src/main.cpp
         src/graphics/Shader.h
         src/graphics/Shader.cpp
@@ -42,11 +42,12 @@ add_executable(opengl_project
         src/graphics/Mesh.h
 )
 
-target_include_directories(opengl_project PRIVATE
+target_include_directories(scilla PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
         ${CMAKE_SOURCE_DIR}
 )
 
-target_link_libraries(opengl_project
+target_link_libraries(scilla
         third_party
         glfw
         OpenGL::GL
