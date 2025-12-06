@@ -4,17 +4,25 @@
 #include <sstream>
 #include <glm/gtc/type_ptr.hpp>
 
-Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath) {
-    // Load vertex and fragment shader code
+Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath)
+    : m_vertexPath(vertexPath), m_fragmentPath(fragmentPath) {
+
+    m_shaderID = compileProgram(vertexPath, fragmentPath);
+}
+
+unsigned int Shader::compileProgram(const std::string &vPath, const std::string &fPath) {
     std::string vertexCode;
     std::string fragmentCode;
+    std::ifstream vShaderFile;
+    std::ifstream fShaderFile;
+
+    // ensure ifstream objects can throw exceptions
+    vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    fShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
     try {
-        std::ifstream fShaderFile;
-        std::ifstream vShaderFile;
-
-        vShaderFile.open(vertexPath);
-        fShaderFile.open(fragmentPath);
+        vShaderFile.open(vPath);
+        fShaderFile.open(fPath);
 
         std::stringstream vShaderStream;
         std::stringstream fShaderStream;
@@ -27,37 +35,73 @@ Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath) {
 
         vertexCode = vShaderStream.str();
         fragmentCode = fShaderStream.str();
-    } catch (std::ifstream::failure &e) {
-        std::cerr << "ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ: " << e.what() << std::endl;
+    }
+    catch (std::ifstream::failure &e) {
+        std::cerr << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ: " << vPath << " or " << fPath << std::endl;
+        return 0;
     }
 
     const char *vShaderCode = vertexCode.c_str();
     const char *fShaderCode = fragmentCode.c_str();
 
-    // Compile vertex shader
-    unsigned int vertex = glCreateShader(GL_VERTEX_SHADER);
+    unsigned int vertex, fragment;
+    int success;
+
+    vertex = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertex, 1, &vShaderCode, nullptr);
     glCompileShader(vertex);
-    checkCompileErrors(vertex, "VERTEX");
 
-    // Compile fragment shader
-    unsigned int fragment = glCreateShader(GL_FRAGMENT_SHADER);
+    glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        checkCompileErrors(vertex, "VERTEX");
+        glDeleteShader(vertex);
+        return 0;
+    }
+
+    fragment = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragment, 1, &fShaderCode, nullptr);
     glCompileShader(fragment);
-    checkCompileErrors(fragment, "FRAGMENT");
 
-    // Link shaders into a program
-    m_shaderID = glCreateProgram(); // set m_id instance variable
-    glAttachShader(m_shaderID, vertex);
-    glAttachShader(m_shaderID, fragment);
-    glLinkProgram(m_shaderID);
-    glDetachShader(m_shaderID, vertex); // Detach after linking
-    glDetachShader(m_shaderID, fragment);
-    checkCompileErrors(m_shaderID, "PROGRAM");
+    glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        checkCompileErrors(fragment, "FRAGMENT");
+        glDeleteShader(vertex);
+        glDeleteShader(fragment);
+        return 0;
+    }
 
-    // Delete shaders after linking (they are no longer needed)
+    unsigned int programID = glCreateProgram();
+    glAttachShader(programID, vertex);
+    glAttachShader(programID, fragment);
+    glLinkProgram(programID);
+
+    glGetProgramiv(programID, GL_LINK_STATUS, &success);
+    if (!success) {
+        checkCompileErrors(programID, "PROGRAM");
+        glDeleteProgram(programID);
+        glDeleteShader(vertex);
+        glDeleteShader(fragment);
+        return 0;
+    }
+
+    glDetachShader(programID, vertex);
+    glDetachShader(programID, fragment);
     glDeleteShader(vertex);
     glDeleteShader(fragment);
+
+    return programID;
+}
+
+bool Shader::reload() {
+    const unsigned int newShaderID = compileProgram(m_vertexPath, m_fragmentPath);
+    if (newShaderID == 0) {
+        std::cerr << "Error: Failed to reload shader program!" << std::endl;
+        return false;
+    }
+    glDeleteProgram(m_shaderID);
+    m_shaderID = newShaderID;
+    m_uniformLocations.clear(); // clear cached uniform locations
+    return true;
 }
 
 Shader::Shader() : m_shaderID(0) { }

@@ -40,7 +40,7 @@ void main() {
     vec3 norm;
 
     if (enableNormalMapping) {
-        norm = texture(material.texture_normal1, texCoords).rgb;
+        norm = texture(material.texture_normal1, texCoords).rgb; // the normal map stores direction in tangent space
         norm = normalize(norm * 2.0 - 1.0); // unpack data, transform from [0,1] (texture color range) to [-1,1] (unit vector range)
         norm = normalize(TBN * norm); // transform to world space
     } else {

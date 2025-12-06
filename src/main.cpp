@@ -141,7 +141,7 @@ int main() {
         // Draw backpack
         objectShader.use();
         objectShader.setViewProjection(view, projection);
-        objectShader.setVec3("viewPos", camera.getCameraPos());
+        objectShader.setVec3("viewPos", camera.getCameraPos()); // camera position is needed for specular lighting
         objectShader.setBool("enableNormalMapping", input_handler.isNormalMappingEnabled());
 
         auto objectModel = glm::mat4(1.0f);
@@ -170,6 +170,24 @@ int main() {
 
         glfwPollEvents(); // checks for keyboard input, mouse movement events etc
         glfwSwapBuffers(window);
+
+        if (input_handler.shouldReloadShaders()) {
+            std::cout << "Reloading shaders..." << std::endl;
+            if (objectShader.reload()) {
+                objectShader.initializeUniformLocations(vertexUniforms);
+                objectShader.initializeUniformLocations(objectLightUniforms);
+
+                objectShader.use();
+                objectShader.setLightProperties(light);
+                objectShader.setMaterialProperties(material);
+                objectShader.setBool("enableNormalMapping", input_handler.isNormalMappingEnabled());
+            }
+
+            if (lightSourceShader.reload()) {
+                lightSourceShader.initializeUniformLocations(vertexUniforms);
+            }
+            input_handler.resetReloadFlag();
+        }
     }
     glfwTerminate();
     return 0;

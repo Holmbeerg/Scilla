@@ -26,6 +26,8 @@ public:
 
     Shader(); // default constructor
 
+    bool reload();
+
     void setVec4(const std::string &name, const glm::vec4 &value) const;
 
     void setVec3(const std::string &name, const glm::vec3 &value) const;
@@ -56,10 +58,13 @@ public:
 
 private:
     GLuint m_shaderID;
+    std::string m_vertexPath;
+    std::string m_fragmentPath;
 
     mutable std::unordered_map<std::string, GLint> m_uniformLocations;
 
     [[nodiscard]] int getUniformLocation(const std::string &name) const;
 
+    static unsigned int compileProgram(const std::string& vPath, const std::string& fPath);
     static void checkCompileErrors(unsigned int shader, const std::string &type);
 };

@@ -39,6 +39,10 @@ void InputHandler::handleKeyInput(const int key, int scancode, const int action,
         m_normalMapping = !m_normalMapping;
         std::cout << "Normal Mapping: " << (m_normalMapping ? "ON" : "OFF") << std::endl;
     }
+
+    if (key == GLFW_KEY_R && action == GLFW_PRESS) {
+        m_shouldReload = true;
+    }
 }
 
 void InputHandler::toggleWireframeMode() {
