@@ -28,16 +28,19 @@ void Mesh::setupMesh() {
     glEnableVertexArrayAttrib(m_VAO, 0); // Position
     glEnableVertexArrayAttrib(m_VAO, 1); // Normal
     glEnableVertexArrayAttrib(m_VAO, 2); // TexCoords
+    glEnableVertexArrayAttrib(m_VAO, 3); // Tangent
 
     // Specify the format of each vertex attribute
     glVertexArrayAttribFormat(m_VAO, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, Position));
     glVertexArrayAttribFormat(m_VAO, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, Normal));
     glVertexArrayAttribFormat(m_VAO, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, TexCoords));
+    glVertexArrayAttribFormat(m_VAO, 3, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, Tangent));
 
     // Link attribute locations (0, 1, 2) to binding index 0
     glVertexArrayAttribBinding(m_VAO, 0, 0);
     glVertexArrayAttribBinding(m_VAO, 1, 0);
     glVertexArrayAttribBinding(m_VAO, 2, 0);
+    glVertexArrayAttribBinding(m_VAO, 3, 0);
 }
 
 void Mesh::Draw(const Shader &shader) const {

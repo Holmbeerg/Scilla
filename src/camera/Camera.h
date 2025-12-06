@@ -12,6 +12,7 @@ public:
     [[nodiscard]] glm::vec3 getCameraPos() const;
     [[nodiscard]] float getFov() const;
     [[nodiscard]] glm::mat4 getViewMatrix() const;
+    void setFirstMouse(const bool b) { m_firstMouse = b; }
 private:
     float m_yaw;
     float m_pitch;

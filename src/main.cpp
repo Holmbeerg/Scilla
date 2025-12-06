@@ -142,6 +142,7 @@ int main() {
         objectShader.use();
         objectShader.setViewProjection(view, projection);
         objectShader.setVec3("viewPos", camera.getCameraPos());
+        objectShader.setBool("enableNormalMapping", input_handler.isNormalMappingEnabled());
 
         auto objectModel = glm::mat4(1.0f);
         objectModel = glm::translate(objectModel, glm::vec3(0.0f, 0.0f, -3.0f));
@@ -209,6 +210,10 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
 }
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
+    if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_NORMAL) {
+        camera.setFirstMouse(true);
+        return;
+    }
     camera.update(xpos, ypos);
 }
 

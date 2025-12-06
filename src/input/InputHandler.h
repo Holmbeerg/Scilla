@@ -5,10 +5,14 @@ class InputHandler {
 public:
     explicit InputHandler(GLFWwindow* window);
     void handleKeyInput(int key, int scancode, int action, int mods);
+    [[nodiscard]] bool isNormalMappingEnabled() const { return m_normalMapping; }
+    void toggleCursorVisibility();
 
 private:
     static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
     void toggleWireframeMode();
     GLFWwindow* m_window;
     bool m_wireframeMode;
+    bool m_normalMapping;
+    bool m_cursorLocked = true;
 };

@@ -62,6 +62,16 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) {
             vertex.TexCoords = glm::vec2(0.0f, 0.0f);
         }
 
+        if (mesh->mTangents) {
+            glm::vec3 tangent;
+            tangent.x = mesh->mTangents[i].x;
+            tangent.y = mesh->mTangents[i].y;
+            tangent.z = mesh->mTangents[i].z;
+            vertex.Tangent = tangent;
+        } else {
+            vertex.Tangent = glm::vec3(0.0f); // same as (0.0f, 0.0f, 0.0f)
+        }
+
         vertices.push_back(vertex);
     }
 
@@ -111,7 +121,7 @@ std::vector<std::shared_ptr<Texture>> Model::loadMaterialTextures(const aiMateri
         }
         if (!skip) {
             const bool useGamma = m_gammaCorrection && type == aiTextureType_DIFFUSE;
-            auto texture = std::make_shared<Texture>(fullPath, typeName, useGamma, false); // do not flip vertically, as Assimp already did that
+            auto texture = std::make_shared<Texture>(fullPath, typeName, useGamma, true);
             textures.push_back(texture);
             m_textures_loaded.push_back(texture);
         }

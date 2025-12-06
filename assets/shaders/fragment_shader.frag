@@ -13,6 +13,7 @@ struct Light {
 struct Material {
     sampler2D texture_diffuse1; // sampler2D is an opaque type, cant instantiate. Tells the shader which texture unit to sample from
     sampler2D texture_specular1;
+    sampler2D texture_normal1; // normal map, this is in tangent space
     float shininess;
 };
 
@@ -23,10 +24,12 @@ out vec4 FragColor;
 in vec2 texCoords;
 in vec3 normal;
 in vec3 fragPos;
+in mat3 TBN;
 
 uniform vec3 viewPos;
 uniform Material material;
 uniform Light light;
+uniform bool enableNormalMapping;
 
 void main() {
     // ambient. Ambient light is constant
@@ -34,8 +37,17 @@ void main() {
 
     // Implementation of Phong lighting
 
+    vec3 norm;
+
+    if (enableNormalMapping) {
+        norm = texture(material.texture_normal1, texCoords).rgb;
+        norm = normalize(norm * 2.0 - 1.0); // unpack data, transform from [0,1] (texture color range) to [-1,1] (unit vector range)
+        norm = normalize(TBN * norm); // transform to world space
+    } else {
+        norm = normalize(normal);
+    }
+
     // diffuse. Diffuse light depends on the angle between light source and surface normal
-    vec3 norm = normalize(normal);
     vec3 lightDir = normalize(light.position - fragPos);
     float diff = max(dot(norm, lightDir), 0.0);
     vec3 diffuse = light.diffuse * diff * vec3(texture(material.texture_diffuse1, texCoords)).rgb;
