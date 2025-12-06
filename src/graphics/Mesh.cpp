@@ -1,7 +1,11 @@
 #include "Mesh.h"
 
-Mesh::Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<Texture> textures)
-    : m_vertices(std::move(vertices)), m_indices(std::move(indices)), m_textures(std::move(textures)) { // we avoid an extra copy by moving
+Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices,
+           std::vector<std::shared_ptr<Texture> > textures)
+    : m_vertices(std::move(vertices)), // we avoid an extra copy by moving
+      m_indices(std::move(indices)),
+      m_textures(std::move(textures)),
+      m_VAO(0), m_VBO(0), m_EBO(0) {
     setupMesh();
 }
 
@@ -37,21 +41,27 @@ void Mesh::setupMesh() {
 }
 
 void Mesh::Draw(const Shader &shader) const {
-    unsigned int diffuseNr  = 1;
+    unsigned int diffuseNr = 1;
     unsigned int specularNr = 1;
+    unsigned int normalNr = 1;
+    unsigned int heightNr = 1;
 
-    for(size_t i = 0; i < m_textures.size(); i++) {
+    for (size_t i = 0; i < m_textures.size(); i++) {
         std::string number;
-        std::string name = m_textures[i].type;
+        std::string name = m_textures[i]->getType();
 
-        if(name == "texture_diffuse")
+        if (name == "texture_diffuse")
             number = std::to_string(diffuseNr++);
-        else if(name == "texture_specular")
+        else if (name == "texture_specular")
             number = std::to_string(specularNr++);
+        else if (name == "texture_normal")
+            number = std::to_string(normalNr++);
+        else if (name == "texture_height")
+            number = std::to_string(heightNr++);
 
         shader.setInt("material." + name + number, static_cast<int>(i));
 
-        glBindTextureUnit(i, m_textures[i].id);
+        m_textures[i]->bindToUnit(i);
     }
 
     glBindVertexArray(m_VAO);

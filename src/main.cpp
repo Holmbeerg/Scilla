@@ -11,7 +11,7 @@
 
 #include "camera/Camera.h"
 #include "graphics/Shader.h"
-#include "graphics/Texture.h"
+#include "graphics/Model.h"
 
 #include "graphics/VAO.h"
 #include "graphics/VBO.h"
@@ -25,7 +25,8 @@ constexpr unsigned int SCR_HEIGHT = 600;
 // function prototype/forward declaration = declaration of function
 void framebuffer_size_callback(GLFWwindow *window, int width, int height); // resize window
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+
+void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 
 void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const *message,
                       void const *user_param);
@@ -40,21 +41,16 @@ void createAndGenerateTexture();
 
 void interpolationValueControls();
 
+void setupLightCube();
+
 void drawCube(const VAO &vao);
 
 FrameTimer frameTimer;
 Camera camera;
 
-VAO lightSourceVao, objectVao;
-VBO vbo1, vbo2;
+VAO lightSourceVao;
+VBO vbo2;
 EBO ebo1;
-
-Texture containerTexture, containerSpecularTexture;
-
-enum class TextureUnit {
-    DIFFUSE = 0,
-    SPECULAR = 1,
-};
 
 Shader objectShader;
 Shader lightSourceShader;
@@ -86,10 +82,13 @@ int main() {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    glEnable(GL_FRAMEBUFFER_SRGB); // enable sRGB gamma correction
     glDebugMessageCallback(message_callback, nullptr);
+
     setupShaders();
-    setupBuffers();
-    createAndGenerateTexture();
+    setupLightCube();
+
+    Model backpack("assets/models/backpack/backpack.obj", true);
 
     InputHandler input_handler(window);
 
@@ -108,59 +107,61 @@ int main() {
 
     constexpr auto lightPos = glm::vec3(1.2f, 1.0f, 2.0f);
 
-    constexpr Shader::Light light {
+    constexpr Shader::Light light{
         lightPos,
-        glm::vec3(0.2f, 0.2f, 0.2f),
+        glm::vec3(0.05, 0.05f, 0.05f),
         glm::vec3(0.5f, 0.5f, 0.5f),
         glm::vec3(1.0f, 1.0f, 1.0f)
     };
 
-    constexpr Shader::Material material {
+    constexpr Shader::Material material{
         64.0f
     };
 
     objectShader.initializeUniformLocations(vertexUniforms);
     objectShader.initializeUniformLocations(objectLightUniforms);
     lightSourceShader.initializeUniformLocations(vertexUniforms);
+
     objectShader.use();
     objectShader.setLightProperties(light);
     objectShader.setMaterialProperties(material);
 
-    // set which texture unit each sampler should use
-    objectShader.setInt("material.diffuse", std::to_underlying(TextureUnit::DIFFUSE));
-    objectShader.setInt("material.specular", std::to_underlying(TextureUnit::SPECULAR));
-
-    // render loop
+    // Render loop
     while (!glfwWindowShouldClose(window)) {
         camera.processInput(window, frameTimer.getDeltaTime());
         frameTimer.update();
-        glm::mat4 projection = glm::perspective(glm::radians(camera.getFov()), SCR_WIDTH / static_cast<float>(SCR_HEIGHT), 0.1f, 100.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(camera.getFov()),
+                                                SCR_WIDTH / static_cast<float>(SCR_HEIGHT), 0.1f, 100.0f);
         glm::mat4 view = camera.getViewMatrix();
-        auto lightModel = glm::mat4(1.0f);
-        auto objectModel = glm::mat4(1.0f);
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Object shader
+        // Draw backpack
         objectShader.use();
         objectShader.setViewProjection(view, projection);
         objectShader.setVec3("viewPos", camera.getCameraPos());
+
+        auto objectModel = glm::mat4(1.0f);
+        objectModel = glm::translate(objectModel, glm::vec3(0.0f, 0.0f, -3.0f));
+        objectModel = glm::scale(objectModel, glm::vec3(1.0f));
 
         auto normalMatrix = glm::mat3(transpose(inverse(objectModel)));
         objectShader.setMat4("model", objectModel);
         objectShader.setMat3("normalMatrix", normalMatrix);
 
-        drawCube(objectVao);
+        backpack.Draw(objectShader);
 
-        // Light source shader
+        // Draw light source cube
         lightSourceShader.use();
         lightSourceShader.setViewProjection(view, projection);
 
+        auto lightModel = glm::mat4(1.0f);
+        lightModel = glm::translate(lightModel, lightPos);
+        lightModel = glm::scale(lightModel, glm::vec3(0.5f));
+
         normalMatrix = glm::mat3(transpose(inverse(lightModel)));
         lightSourceShader.setMat3("normalMatrix", normalMatrix);
-        lightModel = translate(lightModel, lightPos);
-        lightModel = scale(lightModel, glm::vec3(0.5f));
         lightSourceShader.setMat4("model", lightModel);
 
         drawCube(lightSourceVao);
@@ -172,20 +173,7 @@ int main() {
     return 0;
 }
 
-void drawCube(const VAO &vao) {
-    vao.bind();
-    glDrawArrays(GL_TRIANGLES, 0, 36);
-}
-
-void createAndGenerateTexture() {
-    containerTexture = Texture("textures/container2.png");
-    containerSpecularTexture = Texture("textures/container2_specular.png");
-    containerTexture.bindToUnit(std::to_underlying(TextureUnit::DIFFUSE));
-    containerSpecularTexture.bindToUnit(std::to_underlying(TextureUnit::SPECULAR));
-}
-
-void setupBuffers() {
-    objectVao.generate();
+void setupLightCube() {
     lightSourceVao.generate();
     vbo2.generate();
     ebo1.generate();
@@ -197,77 +185,65 @@ void setupBuffers() {
     };
 
     const float cubeVertices[] = {
-    // positions          // normals           // texture coords
-    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
-     0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f, 1.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f, 0.0f,
+        // positions          // normals           // texture coords
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f,
+        0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f,
+        0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f,
+        -0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
 
-    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   1.0f, 1.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,   0.0f, 0.0f,
+        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+        0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+        0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+        -0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
 
-    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+        -0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+        -0.5f, 0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+        -0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
 
-     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+        0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+        0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+        0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
 
-    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f, 0.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 0.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f,
+        0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+        0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+        -0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f,
 
-    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
-};
-
-    const unsigned int indices[] = {
-        0, 1, 3, // first triangle
-        1, 2, 3, // second triangle
+        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+        0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+        0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+        -0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f
     };
 
-    objectVao.bindVBO(vbo2, 0, sizeof(cube));
     lightSourceVao.bindVBO(vbo2, 0, sizeof(cube));
-    objectVao.bindEBO(ebo1);
-
     vbo2.setData(cubeVertices, sizeof(cubeVertices));
-    ebo1.setData(indices, sizeof(indices));
-
-    objectVao.setAttribFormat(0, 3, GL_FLOAT, false, offsetof(cube, position), 0); // tell the VAO how to interpret the vertex data in the bound VBO
-    objectVao.setAttribFormat(1, 3, GL_FLOAT, false, offsetof(cube, normal), 0);
-    objectVao.setAttribFormat(2, 2, GL_FLOAT, false, offsetof(cube, texCoord), 0);
-    objectVao.enableAttrib(0);
-    objectVao.enableAttrib(1);
-    objectVao.enableAttrib(2);
 
     lightSourceVao.enableAttrib(0);
     lightSourceVao.setAttribFormat(0, 3, GL_FLOAT, false, offsetof(cube, position), 0);
+    lightSourceVao.bind();
+}
 
-    objectVao.bind();
+void drawCube(const VAO &vao) {
+    vao.bind();
+    glDrawArrays(GL_TRIANGLES, 0, 36);
 }
 
 void setupShaders() {
-    const std::string shaderBasePath = "shaders/";
+    const std::string shaderBasePath = "assets/shaders/";
     objectShader = Shader(shaderBasePath + "vertex_shader.vert", shaderBasePath + "fragment_shader.frag");
     lightSourceShader = Shader(shaderBasePath + "vertex_shader.vert", shaderBasePath + "lightSource.frag");
 }
@@ -276,16 +252,17 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
-void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
     camera.update(xpos, ypos);
 }
 
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
     camera.processScroll(xoffset, yoffset);
 }
 
 void message_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const *message,
                       void const *user_param) {
+    if (severity == GL_DEBUG_SEVERITY_NOTIFICATION) return;
     auto const src_str = [source]() {
         switch (source) {
             case GL_DEBUG_SOURCE_API: return "API";
