@@ -40,6 +40,7 @@ add_executable(scilla
         src/graphics/Model.h
         src/graphics/Mesh.cpp
         src/graphics/Mesh.h
+        src/graphics/Cube.h
 )
 
 target_include_directories(scilla PRIVATE
