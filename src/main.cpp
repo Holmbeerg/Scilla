@@ -17,7 +17,7 @@
 #include "graphics/VAO.h"
 #include "graphics/VBO.h"
 #include "graphics/EBO.h"
-#include "graphics/Skybox.h"
+#include "world/Skybox.h"
 #include "utils/FrameTimer.h"
 #include "input/InputHandler.h"
 

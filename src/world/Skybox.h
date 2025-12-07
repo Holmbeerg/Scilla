@@ -3,7 +3,7 @@
 #include <vector>
 #include <glm/fwd.hpp>
 
-#include "Shader.h"
+#include "../graphics/Shader.h"
 
 
 class Skybox {
