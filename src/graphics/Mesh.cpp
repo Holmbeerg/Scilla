@@ -43,7 +43,7 @@ void Mesh::setupMesh() {
     glVertexArrayAttribBinding(m_VAO, 3, 0);
 }
 
-void Mesh::Draw(const Shader &shader) const {
+void Mesh::render(const Shader &shader) const {
     unsigned int diffuseNr = 1;
     unsigned int specularNr = 1;
     unsigned int normalNr = 1;

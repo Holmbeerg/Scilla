@@ -18,7 +18,7 @@ class Mesh {
 public:
     Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<std::shared_ptr<Texture>> textures);
 
-    void Draw(const Shader &shader) const;
+    void render(const Shader &shader) const;
 
     [[nodiscard]] const std::vector<Vertex> &getVertices() const { return m_vertices; } // return by reference to avoid copying
     [[nodiscard]] const std::vector<unsigned int> &getIndices() const { return m_indices; }

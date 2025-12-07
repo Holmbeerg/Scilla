@@ -2,9 +2,9 @@
 #include <assimp/postprocess.h>
 #include <iostream>
 
-void Model::Draw(const Shader &shader) const {
+void Model::render(const Shader &shader) const {
     for (const auto &mesh: m_meshes) {
-        mesh.Draw(shader);
+        mesh.render(shader);
     }
 }
 
@@ -77,7 +77,7 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) {
 
     for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
         aiFace face = mesh->mFaces[i];
-        for (unsigned int j = 0; j < face.mNumIndices; j++) {
+        for (unsigned int j = 0; j < face.mNumIndices; j++) { // 3 for triangulated faces. A face is a triangle here
             indices.push_back(face.mIndices[j]);
         }
     }

@@ -17,11 +17,21 @@
 #include "graphics/VAO.h"
 #include "graphics/VBO.h"
 #include "graphics/EBO.h"
+#include "graphics/Skybox.h"
 #include "utils/FrameTimer.h"
 #include "input/InputHandler.h"
 
 constexpr unsigned int SCR_WIDTH = 800; // unsigned int = only positive numbers, constexpr = known at compile time
 constexpr unsigned int SCR_HEIGHT = 600;
+
+std::vector<std::string> faces = {
+    "assets/textures/skybox/right.jpg",
+    "assets/textures/skybox/left.jpg",
+    "assets/textures/skybox/top.jpg",
+    "assets/textures/skybox/bottom.jpg",
+    "assets/textures/skybox/front.jpg",
+    "assets/textures/skybox/back.jpg"
+};
 
 // function prototype/forward declaration = declaration of function
 void framebuffer_size_callback(GLFWwindow *window, int width, int height); // resize window
@@ -44,7 +54,7 @@ void interpolationValueControls();
 
 void setupLightCube();
 
-void drawCube(const VAO &vao);
+void renderCube(const VAO &vao);
 
 FrameTimer frameTimer;
 Camera camera;
@@ -55,6 +65,7 @@ EBO ebo1;
 
 Shader objectShader;
 Shader lightSourceShader;
+Shader skyboxShader;
 
 int main() {
     glfwInit();
@@ -84,12 +95,15 @@ int main() {
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     glEnable(GL_FRAMEBUFFER_SRGB); // enable sRGB gamma correction
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
     glDebugMessageCallback(message_callback, nullptr);
+
+    Skybox skybox(faces);
 
     setupShaders();
     setupLightCube();
 
-    Model backpack("assets/models/backpack/backpack.obj", true);
+    const Model backpack("assets/models/backpack/backpack.obj", true);
 
     InputHandler input_handler(window);
 
@@ -127,12 +141,15 @@ int main() {
     objectShader.setLightProperties(light);
     objectShader.setMaterialProperties(material);
 
+    skyboxShader.use();
+    skyboxShader.setInt("skybox", 0);
+
     // Render loop
     while (!glfwWindowShouldClose(window)) {
         camera.processInput(window, frameTimer.getDeltaTime());
         frameTimer.update();
         glm::mat4 projection = glm::perspective(glm::radians(camera.getFov()),
-                                                SCR_WIDTH / static_cast<float>(SCR_HEIGHT), 0.1f, 100.0f);
+                                                SCR_WIDTH / static_cast<float>(SCR_HEIGHT), 0.1f, 100.0f); // anything outside this range will not be rendered
         glm::mat4 view = camera.getViewMatrix();
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -144,7 +161,7 @@ int main() {
         objectShader.setVec3("viewPos", camera.getCameraPos()); // camera position is needed for specular lighting
         objectShader.setBool("enableNormalMapping", input_handler.isNormalMappingEnabled());
 
-        auto objectModel = glm::mat4(1.0f);
+        auto objectModel = glm::mat4(1.0f); // identity matrix
         objectModel = glm::translate(objectModel, glm::vec3(0.0f, 0.0f, -3.0f));
         objectModel = glm::scale(objectModel, glm::vec3(1.0f));
 
@@ -152,7 +169,7 @@ int main() {
         objectShader.setMat4("model", objectModel);
         objectShader.setMat3("normalMatrix", normalMatrix);
 
-        backpack.Draw(objectShader);
+        backpack.render(objectShader);
 
         // Draw light source cube
         lightSourceShader.use();
@@ -166,7 +183,9 @@ int main() {
         lightSourceShader.setMat3("normalMatrix", normalMatrix);
         lightSourceShader.setMat4("model", lightModel);
 
-        drawCube(lightSourceVao);
+        renderCube(lightSourceVao);
+
+        skybox.render(skyboxShader, view, projection); // draw skybox last to prevent overdraw
 
         glfwPollEvents(); // checks for keyboard input, mouse movement events etc
         glfwSwapBuffers(window);
@@ -212,7 +231,7 @@ void setupLightCube() {
     lightSourceVao.bind();
 }
 
-void drawCube(const VAO &vao) {
+void renderCube(const VAO &vao) {
     vao.bind();
     glDrawArrays(GL_TRIANGLES, 0, 36);
 }
@@ -221,6 +240,7 @@ void setupShaders() {
     const std::string shaderBasePath = "assets/shaders/";
     objectShader = Shader(shaderBasePath + "vertex_shader.vert", shaderBasePath + "fragment_shader.frag");
     lightSourceShader = Shader(shaderBasePath + "vertex_shader.vert", shaderBasePath + "lightSource.frag");
+    skyboxShader = Shader(shaderBasePath + "skybox.vert", shaderBasePath + "skybox.frag");
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {

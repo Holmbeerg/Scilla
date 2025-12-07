@@ -158,7 +158,6 @@ void Shader::setViewProjection(const glm::mat4& view, const glm::mat4& projectio
     setMat4("view", view);
 }
 
-
 GLuint Shader::getId() const {
     return m_shaderID;
 }

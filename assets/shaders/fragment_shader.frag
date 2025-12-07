@@ -26,7 +26,7 @@ in vec3 normal;
 in vec3 fragPos;
 in mat3 TBN;
 
-uniform vec3 viewPos;
+uniform vec3 viewPos; // camera position, needed for specular lighting calculation
 uniform Material material;
 uniform Light light;
 uniform bool enableNormalMapping;

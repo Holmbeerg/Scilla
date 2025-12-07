@@ -19,8 +19,8 @@ out mat3 TBN;
 
 // Uniforms are global variables within a shader that remain constant for all processed vertices for a single draw call.
 uniform mat4 model;       // Transforms Object Space -> World Space
-uniform mat4 view;        // Transforms World Space -> View (Camera) Space
-uniform mat4 projection;  // Transforms View Space -> Clip Space (Frustum)
+uniform mat4 view;        // Transforms World Space -> View (Camera) Space.
+uniform mat4 projection;  // Transforms View Space -> Clip Space (Frustum). From the cameras 3D world perspective onto a 2D screen.
 uniform mat3 normalMatrix;
 
 void main() {
