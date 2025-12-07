@@ -41,8 +41,8 @@ add_executable(scilla
         src/graphics/Mesh.cpp
         src/graphics/Mesh.h
         src/graphics/Cube.h
-        src/graphics/Skybox.cpp
-        src/graphics/Skybox.h
+        src/world/Skybox.cpp
+        src/world/Skybox.h
 )
 
 target_include_directories(scilla PRIVATE
