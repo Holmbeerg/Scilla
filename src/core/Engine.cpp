@@ -37,6 +37,7 @@ bool Engine::initialize(const int width, const int height, const char* title) {
     }
 
     glfwMakeContextCurrent(m_window);
+    glfwSwapInterval(0); // 0 to disable V-Sync, 1 to enable
     glfwSetWindowUserPointer(m_window, this); // THERE CAN ONLY BE ONE!
 
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
