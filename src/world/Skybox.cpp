@@ -41,11 +41,9 @@ Skybox::Skybox(const std::vector<std::string> &faces)
     m_cubemapTexture = loadCubemap(faces);
 }
 
-void Skybox::render(const Shader &shader, const glm::mat4 &view, const glm::mat4 &projection) const {
+void Skybox::render(const Shader &shader) const {
     glDepthFunc(GL_LEQUAL);  // Change depth function to LEQUAL because the skybox is exactly at depth 1.0
     shader.use();
-    shader.setMat4("view", view);
-    shader.setMat4("projection", projection);
 
     glBindTextureUnit(0, m_cubemapTexture);
 
@@ -59,6 +57,8 @@ unsigned int Skybox::loadCubemap(const std::vector<std::string> &faces) {
     glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &textureID);
 
     int width, height, nrChannels;
+
+    stbi_set_flip_vertically_on_load(false); // Do not flip for cubemaps!
 
     unsigned char* data = stbi_load(faces[0].c_str(), &width, &height, &nrChannels, 0);
     if (!data) {

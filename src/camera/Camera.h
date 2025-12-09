@@ -1,4 +1,5 @@
 #pragma once
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <glm/vec3.hpp>
 #include <glm/glm.hpp>
@@ -12,6 +13,7 @@ public:
     [[nodiscard]] glm::vec3 getCameraPos() const;
     [[nodiscard]] float getFov() const;
     [[nodiscard]] glm::mat4 getViewMatrix() const;
+    [[nodiscard]] glm::mat4 getProjectionMatrix(float width, float height) const;
     void setFirstMouse(const bool b) { m_firstMouse = b; }
 private:
     float m_yaw;

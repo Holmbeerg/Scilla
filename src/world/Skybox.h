@@ -9,7 +9,7 @@
 class Skybox {
 public:
     explicit Skybox(const std::vector<std::string> &faces);
-    void render(const Shader &shader, const glm::mat4 &view, const glm::mat4 &projection) const;
+    void render(const Shader &shader) const;
 private:
     unsigned int m_cubemapTexture;
     unsigned int m_VAO, m_VBO;

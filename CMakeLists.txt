@@ -22,12 +22,12 @@ add_executable(scilla
         src/main.cpp
         src/graphics/Shader.h
         src/graphics/Shader.cpp
-        src/graphics/VAO.cpp
-        src/graphics/VAO.h
-        src/graphics/VBO.cpp
-        src/graphics/VBO.h
-        src/graphics/EBO.cpp
-        src/graphics/EBO.h
+        src/graphics/buffers/VAO.cpp
+        src/graphics/buffers/VAO.h
+        src/graphics/buffers/VBO.cpp
+        src/graphics/buffers/VBO.h
+        src/graphics/buffers/EBO.cpp
+        src/graphics/buffers/EBO.h
         src/graphics/Texture.cpp
         src/graphics/Texture.h
         src/camera/Camera.cpp
@@ -43,6 +43,19 @@ add_executable(scilla
         src/graphics/Cube.h
         src/world/Skybox.cpp
         src/world/Skybox.h
+        src/core/Engine.cpp
+        src/core/Engine.h
+        src/core/Scene.cpp
+        src/core/Scene.h
+        src/core/Renderer.cpp
+        src/core/Renderer.h
+        src/world/Terrain.cpp
+        src/world/Terrain.h
+        src/world/TerrainGenerator.h
+        src/graphics/buffers/UniformBuffer.h
+        src/graphics/buffers/UniformBuffer.cpp
+        src/camera/CameraUBO.cpp
+        src/camera/CameraUBO.h
 )
 
 target_include_directories(scilla PRIVATE

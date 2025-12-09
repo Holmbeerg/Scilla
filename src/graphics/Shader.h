@@ -52,7 +52,7 @@ public:
 
     void setViewProjection(const glm::mat4& view, const glm::mat4& projection) const;
 
-    [[nodiscard]] GLuint getId() const;
+    [[nodiscard]] GLuint getID() const;
 
     void initializeUniformLocations(const std::vector<std::string> &uniformNames) const;
 

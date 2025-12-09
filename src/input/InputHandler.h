@@ -1,9 +1,11 @@
 #pragma once
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
 class InputHandler {
 public:
     explicit InputHandler(GLFWwindow* window);
+    [[nodiscard]] GLFWwindow* getWindow() const { return m_window; }
     void handleKeyInput(int key, int scancode, int action, int mods);
     [[nodiscard]] bool isNormalMappingEnabled() const { return m_normalMapping; }
     [[nodiscard]] bool shouldReloadShaders() const { return m_shouldReload; }
@@ -11,7 +13,6 @@ public:
     void toggleCursorVisibility();
 
 private:
-    static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
     void toggleWireframeMode();
     GLFWwindow* m_window;
     bool m_wireframeMode;

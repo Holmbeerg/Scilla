@@ -24,7 +24,7 @@ void Mesh::setupMesh() {
     // Bind vertex buffer to the VAO at binding index 0
     glVertexArrayVertexBuffer(m_VAO, 0, m_VBO, 0, sizeof(Vertex));
 
-    // Enable vertex attribute locations 0, 1, and 2
+    // Enable vertex attribute locations 0, 1, 2 and 3
     glEnableVertexArrayAttrib(m_VAO, 0); // Position
     glEnableVertexArrayAttrib(m_VAO, 1); // Normal
     glEnableVertexArrayAttrib(m_VAO, 2); // TexCoords

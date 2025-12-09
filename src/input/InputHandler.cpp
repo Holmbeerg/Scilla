@@ -1,25 +1,13 @@
 #include "InputHandler.h"
 
+#include <glad/glad.h>
 #include <iostream>
 #include <ostream>
-
 
 InputHandler::InputHandler(GLFWwindow *window)
     : m_window(window)
       , m_wireframeMode(false),
       m_normalMapping(true) {
-    // Store the instance pointer
-    glfwSetWindowUserPointer(window, this);
-    // https://stackoverflow.com/questions/55145966/what-does-glfwgetwindowuserpointer-do
-    glfwSetKeyCallback(window, keyCallback);
-}
-
-void InputHandler::keyCallback(GLFWwindow *window, const int key, const int scancode, const int action,
-                               const int mods) {
-    if (auto *handler = static_cast<InputHandler *>(glfwGetWindowUserPointer(window))) {
-        // Retrieve the instance pointer
-        handler->handleKeyInput(key, scancode, action, mods);
-    }
 }
 
 void InputHandler::handleKeyInput(const int key, int scancode, const int action, int mods) {

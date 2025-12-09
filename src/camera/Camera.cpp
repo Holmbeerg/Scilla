@@ -1,6 +1,7 @@
 #include "Camera.h"
 
 #include <iostream>
+#include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
 Camera::Camera()
@@ -20,6 +21,7 @@ void Camera::update(const double xpos, const double ypos) {
         m_lastX = xpos;
         m_lastY = ypos;
         m_firstMouse = false;
+        return;
     }
 
     m_xOffset = xpos - m_lastX;
@@ -77,7 +79,7 @@ void Camera::processInput(GLFWwindow *window, const float deltaTime) {
     updateView();
 }
 
-void Camera::processScroll(double xoffset, double yoffset) {
+void Camera::processScroll(const double xoffset, const double yoffset) {
     m_fov -= static_cast<float>(yoffset);
 
     if (m_fov < 1.0f) {
@@ -98,4 +100,8 @@ float Camera::getFov() const {
 
 glm::mat4 Camera::getViewMatrix() const {
     return m_view;
+}
+
+glm::mat4 Camera::getProjectionMatrix(const float width, const float height) const {
+    return glm::perspective(glm::radians(m_fov), width / height, 0.1f, 100.0f);
 }

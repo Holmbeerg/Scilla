@@ -1,4 +1,6 @@
-// fragment shader/pixel shader, it computes color and other attributes of each pixel/fragment
+// The fragment shader computes the color of each pixel based on lighting and material properties.
+// Fragments can be modified and discarded during the rendering process, while pixels are the final result.
+// The fragments have to pass various tests, such as depth, alpha and stencil tests (if enabled), before they can be written to the framebuffer as pixels.
 
 #version 460 core
 
@@ -21,18 +23,24 @@ struct Material {
 out vec4 FragColor;
 
 // input data from the vertex shader
-in vec2 texCoords;
+in vec2 texCoords; // interpolated uv coordinates (texture coordinates) from vertex shader
 in vec3 normal;
 in vec3 fragPos;
 in mat3 TBN;
 
-uniform vec3 viewPos; // camera position, needed for specular lighting calculation
 uniform Material material;
 uniform Light light;
 uniform bool enableNormalMapping;
 
+layout (std140, binding = 0) uniform CameraData {
+    mat4 view;
+    mat4 projection;
+    vec3 viewPos;
+};
+
 void main() {
     // ambient. Ambient light is constant
+    // the glsl texture function samples the texture at the given coordinates and returns the color
     vec3 ambient = light.ambient * vec3(texture(material.texture_diffuse1, texCoords));
 
     // Implementation of Phong lighting
@@ -40,7 +48,7 @@ void main() {
     vec3 norm;
 
     if (enableNormalMapping) {
-        norm = texture(material.texture_normal1, texCoords).rgb; // the normal map stores direction in tangent space
+        norm = texture(material.texture_normal1, texCoords).rgb; // the normal map stores direction in tangent space, look up the normal from the normal map. rgb channels correspond to xyz components of the normal vector
         norm = normalize(norm * 2.0 - 1.0); // unpack data, transform from [0,1] (texture color range) to [-1,1] (unit vector range)
         norm = normalize(TBN * norm); // transform to world space
     } else {

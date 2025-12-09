@@ -10,17 +10,22 @@ layout (location = 1) in vec3 aNormal;
 layout (location = 2) in vec2 aTexCoord;
 layout (location = 3) in vec3 aTangent;
 
+// Uniform buffer object (UBO) for camera data, shared between multiple shaders
+layout (std140, binding = 0) uniform CameraData {
+    mat4 view;
+    mat4 projection;
+    vec3 viewPos;
+};
+
 // "out" variables are passed to the Fragment Shader.
 // The GPU automatically interpolates these values across the triangle's surface.
 out vec3 fragPos;
 out vec3 normal;
-out vec2 texCoords;
-out mat3 TBN;
+out vec2 texCoords; // the textures uv coordinates
+out mat3 TBN; // Tangent, Bitangent, Normal matrix to transform from tangent space to world space
 
 // Uniforms are global variables within a shader that remain constant for all processed vertices for a single draw call.
 uniform mat4 model;       // Transforms Object Space -> World Space
-uniform mat4 view;        // Transforms World Space -> View (Camera) Space.
-uniform mat4 projection;  // Transforms View Space -> Clip Space (Frustum). From the cameras 3D world perspective onto a 2D screen.
 uniform mat3 normalMatrix;
 
 void main() {
