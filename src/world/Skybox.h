@@ -1,10 +1,7 @@
 #pragma once
-#include <string>
-#include <vector>
 #include <glm/fwd.hpp>
 
 #include "../graphics/Shader.h"
-
 
 class Skybox {
 public:

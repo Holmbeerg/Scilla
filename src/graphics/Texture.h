@@ -19,7 +19,7 @@ public:
     Texture(Texture &&other) noexcept;
     Texture &operator=(Texture &&other) noexcept;
 
-    void bindToUnit(unsigned int unit) const;
+    void bindToTextureUnit(unsigned int unit) const;
 
     void setWrapMode(GLint wrapS, GLint wrapT) const;
     void setFilterMode(GLint minFilter = GL_LINEAR_MIPMAP_LINEAR, GLint magFilter = GL_LINEAR) const;

@@ -36,7 +36,7 @@ void Mesh::setupMesh() {
     glVertexArrayAttribFormat(m_VAO, 2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, TexCoords));
     glVertexArrayAttribFormat(m_VAO, 3, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, Tangent));
 
-    // Link attribute locations (0, 1, 2) to binding index 0
+    // Link attribute locations (0, 1, 2, 3) to binding index 0
     glVertexArrayAttribBinding(m_VAO, 0, 0);
     glVertexArrayAttribBinding(m_VAO, 1, 0);
     glVertexArrayAttribBinding(m_VAO, 2, 0);
@@ -62,9 +62,8 @@ void Mesh::render(const Shader &shader) const {
         else if (name == "texture_height")
             number = std::to_string(heightNr++);
 
-        shader.setInt("material." + name + number, static_cast<int>(i));
-
-        m_textures[i]->bindToUnit(i);
+        m_textures[i]->bindToTextureUnit(i);
+        shader.setTextureUnit("material." + name + number, static_cast<int>(i));
     }
 
     glBindVertexArray(m_VAO);

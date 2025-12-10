@@ -4,8 +4,6 @@
 #include <iostream>
 #include <ostream>
 
-#include "stb_image.h"
-
 static constexpr float skyboxVertices[] = {
     // Back face
     -1.0f,  1.0f, -1.0f,

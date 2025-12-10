@@ -158,6 +158,10 @@ void Shader::setViewProjection(const glm::mat4& view, const glm::mat4& projectio
     setMat4("view", view);
 }
 
+void Shader::setTextureUnit(const std::string &name, const int unit) const {
+    setInt(name, unit);
+}
+
 GLuint Shader::getID() const {
     return m_shaderID;
 }

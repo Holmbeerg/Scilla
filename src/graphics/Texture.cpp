@@ -64,7 +64,7 @@ Texture &Texture::operator=(Texture &&other) noexcept {
     return *this;
 }
 
-void Texture::bindToUnit(const GLuint unit) const {
+void Texture::bindToTextureUnit(const GLuint unit) const {
     glBindTextureUnit(unit, m_textureID);
 }
 

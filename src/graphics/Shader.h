@@ -52,6 +52,8 @@ public:
 
     void setViewProjection(const glm::mat4& view, const glm::mat4& projection) const;
 
+    void setTextureUnit(const std::string &name, int unit) const;
+
     [[nodiscard]] GLuint getID() const;
 
     void initializeUniformLocations(const std::vector<std::string> &uniformNames) const;
