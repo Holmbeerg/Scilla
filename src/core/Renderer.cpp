@@ -19,11 +19,7 @@ void Renderer::setupShaders() {
     const std::string path = "assets/shaders/";
     m_shaders["object"] = Shader(path + "vertex_shader.vert", path + "fragment_shader.frag");
     m_shaders["light"] = Shader(path + "vertex_shader.vert", path + "lightSource.frag");
-    m_shaders["skybox"] = Shader(path + "skybox.vert", path + "skybox.frag");
-
-    // Configure Skybox Texture Unit
-    m_shaders["skybox"].use();
-    m_shaders["skybox"].setInt("skybox", 0);
+    m_shaders["skybox"] = Shader(path + "skybox.vert", path + "procedural_sky.frag");
 
     // Configure Light/Material Uniforms
     m_shaders["object"].use();
@@ -113,8 +109,4 @@ void Renderer::reloadShaders() {
     for (auto &pair: m_shaders) {
         pair.second.reload();
     }
-    // Re-set uniforms after reload
-    m_shaders["skybox"].use();
-    m_shaders["skybox"].setInt("skybox", 0);
-    // Re-set light/material properties?
 }
