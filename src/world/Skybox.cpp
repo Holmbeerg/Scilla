@@ -57,12 +57,9 @@ static constexpr float skyboxVertices[] = {
 Skybox::Skybox()
     : m_VAO(0), m_VBO(0) {
     glCreateVertexArrays(1, &m_VAO);
-
     glCreateBuffers(1, &m_VBO);
     glNamedBufferStorage(m_VBO, sizeof(skyboxVertices), skyboxVertices, 0);
-
     glVertexArrayVertexBuffer(m_VAO, 0, m_VBO, 0, 3 * sizeof(float));
-
     glEnableVertexArrayAttrib(m_VAO, 0);
     glVertexArrayAttribFormat(m_VAO, 0, 3, GL_FLOAT, GL_FALSE, 0);
     glVertexArrayAttribBinding(m_VAO, 0, 0);
@@ -73,27 +70,15 @@ Skybox::~Skybox() {
     glDeleteBuffers(1, &m_VBO);
 }
 
-void Skybox::update(const float deltaTime) {
-    m_dayTime += deltaTime * 0.1; // Adjust 0.1f to change day speed
-
-    // Simple math to make the sun go round in a circle
-    m_sunDirection.x = std::cos(m_dayTime);
-    m_sunDirection.y = std::sin(m_dayTime);
-    m_sunDirection.z = 0.0f;
-
-    // Normalize so it's always length 1.0
-    m_sunDirection = glm::normalize(m_sunDirection);
-}
-
-void Skybox::render(const Shader &shader) const {
-    glDepthFunc(GL_LEQUAL);  // Change depth function to LEQUAL because the skybox is exactly at depth 1.0
+void Skybox::render(const Shader &shader, const glm::vec3 &sunDir, const float dayTime) const {
+    glDepthFunc(GL_LEQUAL);
     shader.use();
 
-    shader.setVec3("u_SunDirection", m_sunDirection);
-    shader.setFloat("u_Time", m_dayTime);
+    shader.setVec3("u_SunDirection", sunDir);
+    shader.setFloat("u_Time", dayTime);
 
     glBindVertexArray(m_VAO);
     glDrawArrays(GL_TRIANGLES, 0, 36);
 
-    glDepthFunc(GL_LESS); // set depth function back to default
+    glDepthFunc(GL_LESS);
 }

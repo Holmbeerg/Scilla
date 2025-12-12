@@ -15,6 +15,7 @@ public:
     [[nodiscard]] glm::mat4 getViewMatrix() const;
     [[nodiscard]] glm::mat4 getProjectionMatrix(float width, float height) const;
     void setFirstMouse(const bool b) { m_firstMouse = b; }
+    void setCameraPos(const glm::vec3& pos) { m_cameraPos = pos; updateView(); }
 private:
     float m_yaw;
     float m_pitch;

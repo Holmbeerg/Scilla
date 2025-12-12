@@ -55,8 +55,8 @@ void main() {
     // Draw the sun (only when above horizon)
     if (sunHeight > -0.1) {
         float sunDot = dot(viewDir, u_SunDirection);
-        float sunMask = smoothstep(0.995, 0.998, sunDot);
-        float sunGlow = smoothstep(0.98, 0.995, sunDot);
+        float sunMask = smoothstep(0.999, 0.9995, sunDot);
+        float sunGlow = smoothstep(0.998, 0.999, sunDot);
 
         vec3 sunColor = vec3(1.0, 1.0, 0.8);
         vec3 glowColor = vec3(1.0, 0.6, 0.1);

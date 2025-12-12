@@ -20,6 +20,7 @@ void Renderer::setupShaders() {
     m_shaders["object"] = Shader(path + "vertex_shader.vert", path + "fragment_shader.frag");
     m_shaders["light"] = Shader(path + "vertex_shader.vert", path + "lightSource.frag");
     m_shaders["skybox"] = Shader(path + "skybox.vert", path + "procedural_sky.frag");
+    m_shaders["terrain"] = Shader(path + "terrain.vert", path + "terrain.frag");
 
     // Configure Light/Material Uniforms
     m_shaders["object"].use();
@@ -49,21 +50,36 @@ void Renderer::render(Scene &scene, const InputHandler &inputHandler) {
 }
 
 void Renderer::renderOpaquePass(const Scene &scene, const InputHandler &inputHandler) {
-    const Shader &shader = m_shaders["object"];
-    shader.use();
+    const glm::vec3 sunDir = scene.getSunDirection();
 
-    shader.setBool("enableNormalMapping", inputHandler.isNormalMappingEnabled());
+    const Shader &terrainShader = m_shaders["terrain"];
+
+    terrainShader.use();
+    terrainShader.setVec3("u_SunDirection", sunDir);
+
+    // Setup Terrain Matrix
+    auto terrainModel = glm::mat4(1.0f);
+    terrainModel = glm::translate(terrainModel, glm::vec3(-128.0f, -10.0f, -128.0f));
+    terrainShader.setMat4("model", terrainModel);
+
+    scene.getTerrain().render(terrainShader);
+
+    const Shader &objShader = m_shaders["object"];
+    objShader.use();
+
+    objShader.setVec3("u_SunDirection", sunDir);
+    objShader.setBool("enableNormalMapping", inputHandler.isNormalMappingEnabled());
 
     for (const auto &model: scene.getModels()) {
         auto modelMatrix = glm::mat4(1.0f);
-        modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, 0.0f, -3.0f));
+        modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, 10.0f, -3.0f));
 
         auto normalMatrix = glm::mat3(glm::transpose(glm::inverse(modelMatrix)));
 
-        shader.setMat4("model", modelMatrix);
-        shader.setMat3("normalMatrix", normalMatrix);
+        objShader.setMat4("model", modelMatrix);
+        objShader.setMat3("normalMatrix", normalMatrix);
 
-        model->render(shader);
+        model->render(objShader);
     }
 }
 
@@ -94,14 +110,18 @@ void Renderer::setupLightCube() {
 }
 
 void Renderer::renderSkybox(const Scene &scene) {
-    glDepthFunc(GL_LEQUAL); // Optimization: Only draw sky where depth is <= 1.0
+    glDepthFunc(GL_LEQUAL);
 
     const Shader &shader = m_shaders["skybox"];
     shader.use();
 
-    scene.getSkybox().render(shader);
+    scene.getSkybox().render(
+        shader,
+        scene.getSunDirection(),
+        scene.getDayTime()
+    );
 
-    glDepthFunc(GL_LESS); // Reset
+    glDepthFunc(GL_LESS);
 }
 
 void Renderer::reloadShaders() {
