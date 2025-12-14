@@ -40,7 +40,6 @@ vec3 getSunColor(float sunHeight) {
 }
 
 vec3 getSkyAmbient(float sunHeight) {
-    // Match your sky shader's colors
     vec3 dayAmbient = vec3(0.5, 0.7, 1.0);
     vec3 sunsetAmbient = vec3(0.6, 0.4, 0.5);
     vec3 nightAmbient = vec3(0.1, 0.15, 0.3);
@@ -68,8 +67,8 @@ SurfaceMaterial sampleMaterial(sampler2D albedoTex, sampler2D normalTex, vec2 uv
     vec3 macro = texture(albedoTex, uv * 0.5).rgb;
     mat.albedo = detail * 0.5 + mid * 0.3 + macro * 0.2;
 
-    // Sample normal map
-    vec3 normalDetail = texture(normalTex, uv * 20.0).rgb * 2.0 - 1.0;
+    // Sample normal map, uv = TexCoords
+    vec3 normalDetail = texture(normalTex, uv * 20.0).rgb * 2.0 - 1.0; // Convert from [0,1] to [-1,1]. Texture stores file stores colors in the range [0,1]
     vec3 normalMid = texture(normalTex, uv * 5.0).rgb * 2.0 - 1.0;
     vec3 tangentNormal = normalize(normalDetail * 0.7 + normalMid * 0.3);
 
@@ -169,7 +168,7 @@ vec3 calculateLighting(vec3 albedo, vec3 normal, vec3 fragPos, float sunHeight) 
 
 void main() {
     // Build TBN matrix for normal mapping
-    vec3 T = normalize(Tangent);
+    vec3 T = normalize(Tangent); // we need to normalize again as the rasterizer may not provide normalized vectors
     vec3 B = normalize(Bitangent);
     vec3 N = normalize(Normal);
     mat3 TBN = mat3(T, B, N);

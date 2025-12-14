@@ -1,17 +1,20 @@
 #include "Model.h"
 #include <assimp/postprocess.h>
 #include <iostream>
+#include <src/core/AssetManager.h>
 
 void Model::render(const Shader &shader) const {
-    for (const auto &mesh: m_meshes) {
+    for (const auto &mesh : m_meshes) {
         mesh.render(shader);
     }
 }
 
 void Model::loadModel(const std::string &path) {
     Assimp::Importer importer;
+    // https://the-asset-importer-lib-documentation.readthedocs.io/en/latest/usage/postprocessing.html
     const aiScene *scene = importer.ReadFile(
-        path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
+        path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace |
+              aiProcess_OptimizeMeshes | aiProcess_OptimizeGraph);
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
         std::cerr << "ERROR::ASSIMP:: " << importer.GetErrorString() << std::endl;
@@ -34,97 +37,71 @@ void Model::processNode(const aiNode *node, const aiScene *scene) {
     }
 }
 
-Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) {
+Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) const {
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
-    std::vector<std::shared_ptr<Texture>> textures;
 
+    // Process vertices
     for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
         Vertex vertex{};
-        glm::vec3 vector;
 
-        vector.x = mesh->mVertices[i].x;
-        vector.y = mesh->mVertices[i].y;
-        vector.z = mesh->mVertices[i].z;
-        vertex.Position = vector;
-
-        vector.x = mesh->mNormals[i].x;
-        vector.y = mesh->mNormals[i].y;
-        vector.z = mesh->mNormals[i].z;
-        vertex.Normal = vector;
+        vertex.Position = {mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z};
+        vertex.Normal = {mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z};
 
         if (mesh->mTextureCoords[0]) {
-            glm::vec2 vec;
-            vec.x = mesh->mTextureCoords[0][i].x;
-            vec.y = mesh->mTextureCoords[0][i].y;
-            vertex.TexCoords = vec;
+            vertex.TexCoords = {mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y};
         } else {
             vertex.TexCoords = glm::vec2(0.0f, 0.0f);
         }
 
         if (mesh->mTangents) {
-            glm::vec3 tangent;
-            tangent.x = mesh->mTangents[i].x;
-            tangent.y = mesh->mTangents[i].y;
-            tangent.z = mesh->mTangents[i].z;
-            vertex.Tangent = tangent;
+            vertex.Tangent = {mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z};
         } else {
-            vertex.Tangent = glm::vec3(0.0f); // same as (0.0f, 0.0f, 0.0f)
+            vertex.Tangent = glm::vec3(0.0f);
         }
-
         vertices.push_back(vertex);
     }
 
+    // Process Indices
     for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
         aiFace face = mesh->mFaces[i];
-        for (unsigned int j = 0; j < face.mNumIndices; j++) { // 3 for triangulated faces. A face is a triangle here
+        for (unsigned int j = 0; j < face.mNumIndices; j++) {
             indices.push_back(face.mIndices[j]);
         }
     }
 
+    // Process Material
+    Material material;
+
     if (mesh->mMaterialIndex >= 0) {
-        aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
+        aiMaterial *aiMat = scene->mMaterials[mesh->mMaterialIndex];
 
-        auto diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
-        textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
+        material.diffuseMap  = loadMaterialTexture(aiMat, aiTextureType_DIFFUSE, true);
+        material.specularMap = loadMaterialTexture(aiMat, aiTextureType_SPECULAR, false);
 
-        auto specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
-        textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
+        // Assimp often puts Normal maps in aiTextureType_HEIGHT
+        material.normalMap = loadMaterialTexture(aiMat, aiTextureType_HEIGHT, false);
+        if (!material.normalMap) {
+             // Fallback: Check standard normals if height was empty
+             material.normalMap = loadMaterialTexture(aiMat, aiTextureType_NORMALS, false);
+        }
 
-        auto normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
-        textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
-
-        auto heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
-        textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
+        // Load Shininess
+        if (float shininess; aiMat->Get(AI_MATKEY_SHININESS, shininess) == aiReturn_SUCCESS) {
+             material.shininess = shininess;
+        }
     }
-    return {vertices, indices, textures};
+
+    return {vertices, indices, material};
 }
 
-std::vector<std::shared_ptr<Texture>> Model::loadMaterialTextures(const aiMaterial *mat, const aiTextureType type,
-                                                 const std::string &typeName) {
-    std::vector<std::shared_ptr<Texture>> textures;
+std::shared_ptr<Texture> Model::loadMaterialTexture(const aiMaterial *mat, const aiTextureType type, const bool isSRGB) const {
+    if (mat->GetTextureCount(type) == 0) return nullptr;
 
-    for (unsigned int i = 0; i < mat->GetTextureCount(type); i++) {
-        aiString str;
-        mat->GetTexture(type, i, &str);
+    aiString str;
+    mat->GetTexture(type, 0, &str); // Get only the first texture of this type
 
-        std::string fullPath = m_directory + "/" + str.C_Str();
+    const std::string fullPath = m_directory + "/" + str.C_Str();
 
-        bool skip = false;
-
-        for (const auto &loadedTexture: m_textures_loaded) {
-            if (loadedTexture->getPath() == fullPath) {
-                textures.push_back(loadedTexture);
-                skip = true;
-                break;
-            }
-        }
-        if (!skip) {
-            const bool useGamma = m_gammaCorrection && type == aiTextureType_DIFFUSE;
-            auto texture = std::make_shared<Texture>(fullPath, typeName, useGamma, true);
-            textures.push_back(texture);
-            m_textures_loaded.push_back(texture);
-        }
-    }
-    return textures;
+    return AssetManager::get().loadTexture(fullPath, isSRGB, true);
 }

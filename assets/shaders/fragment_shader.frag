@@ -13,9 +13,9 @@ struct Light {
 };
 
 struct Material {
-    sampler2D texture_diffuse1; // sampler2D is an opaque type, cant instantiate. Tells the shader which texture unit to sample from
-    sampler2D texture_specular1;
-    sampler2D texture_normal1; // normal map, this is in tangent space
+    sampler2D diffuse;   // Matches "material.diffuse"
+    sampler2D specular;  // Matches "material.specular"
+    sampler2D normal;    // Matches "material.normal"
     float shininess;
 };
 
@@ -41,14 +41,14 @@ layout (std140, binding = 0) uniform CameraData {
 void main() {
     // ambient. Ambient light is constant
     // the glsl texture function samples the texture at the given coordinates and returns the color
-    vec3 ambient = light.ambient * vec3(texture(material.texture_diffuse1, texCoords));
+    vec3 ambient = light.ambient * vec3(texture(material.diffuse, texCoords));
 
     // Implementation of Phong lighting
 
     vec3 norm;
 
     if (enableNormalMapping) {
-        norm = texture(material.texture_normal1, texCoords).rgb; // the normal map stores direction in tangent space, look up the normal from the normal map. rgb channels correspond to xyz components of the normal vector
+        norm = texture(material.normal, texCoords).rgb; // the normal map stores direction in tangent space, look up the normal from the normal map. rgb channels correspond to xyz components of the normal vector
         norm = normalize(norm * 2.0 - 1.0); // unpack data, transform from [0,1] (texture color range) to [-1,1] (unit vector range)
         norm = normalize(TBN * norm); // transform to world space
     } else {
@@ -58,13 +58,13 @@ void main() {
     // diffuse. Diffuse light depends on the angle between light source and surface normal
     vec3 lightDir = normalize(light.position - fragPos);
     float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = light.diffuse * diff * vec3(texture(material.texture_diffuse1, texCoords)).rgb;
+    vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, texCoords)).rgb;
 
     // specular. Specular light depends on the angle between view direction and reflection direction
     vec3 viewDir = normalize(viewPos - fragPos);
     vec3 reflectDir = reflect(-lightDir, norm);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-    vec3 specular = light.specular * spec * vec3(texture(material.texture_specular1, texCoords)).rgb;
+    vec3 specular = light.specular * spec * vec3(texture(material.specular, texCoords)).rgb;
 
     // combine
     vec3 result = ambient + diffuse + specular;

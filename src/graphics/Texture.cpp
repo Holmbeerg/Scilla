@@ -8,9 +8,13 @@ Texture::Texture() : m_textureID(0), m_width(0), m_height(0), m_nrChannels(0) {
 }
 
 Texture::Texture(const std::string &imagePath, std::string typeName, const bool isColorData, const bool flipVertically)
+    : Texture(imagePath, isColorData, flipVertically) {
+    m_type = std::move(typeName);
+}
+
+Texture::Texture(const std::string &imagePath, const bool isColorData, const bool flipVertically)
     : m_textureID(0),
       m_path(imagePath),
-      m_type(std::move(typeName)),
       m_width(0),
       m_height(0),
       m_nrChannels(0) {

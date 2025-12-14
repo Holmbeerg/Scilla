@@ -57,6 +57,10 @@ add_executable(scilla
         src/camera/CameraUBO.cpp
         src/camera/CameraUBO.h
         src/world/TerrainGenerator.cpp
+        src/core/AssetManager.cpp
+        src/core/AssetManager.h
+        src/graphics/Material.h
+        src/world/SceneObject.h
 )
 
 target_include_directories(scilla PRIVATE

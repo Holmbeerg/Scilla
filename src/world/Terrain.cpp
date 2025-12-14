@@ -1,5 +1,6 @@
 #include "Terrain.h"
 #include <iostream>
+#include <glm/ext/matrix_transform.hpp>
 
 Terrain::Terrain(const int width, const int depth, const std::vector<float>& heightMap)
     : m_heights(heightMap), m_VAO(0), m_VBO(0), m_EBO(0), m_indexCount(0), m_width(width), m_depth(depth) {
@@ -81,6 +82,8 @@ Terrain::Terrain(const int width, const int depth, const std::vector<float>& hei
 
     m_snowTexture  = Texture(texPath + "snow_field_aerial_col_2k.jpg", "texture_diffuse", true, false);
     m_snowNormal   = Texture(texPath + "snow_field_aerial_nor_gl_2k.png", "texture_normal", true, false);
+
+    std::cout << indices.size() / 3 << " total triangles in terrain mesh." << std::endl;
 }
 
 
@@ -143,4 +146,8 @@ void Terrain::render(const Shader& shader) const {
 
     glBindVertexArray(m_VAO);
     glDrawElements(GL_TRIANGLES, m_indexCount, GL_UNSIGNED_INT, nullptr);
+}
+
+glm::mat4 Terrain::getModelMatrix() const {
+    return glm::translate(glm::mat4(1.0f), m_position);
 }

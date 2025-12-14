@@ -4,6 +4,8 @@
 #include "Renderer.h"
 #include <iostream>
 #include <glm/gtc/matrix_transform.hpp>
+
+#include "AssetManager.h"
 #include "graphics/Cube.h"
 
 void Renderer::initialize() {
@@ -17,18 +19,20 @@ void Renderer::initialize() {
 
 void Renderer::setupShaders() {
     const std::string path = "assets/shaders/";
-    m_shaders["object"] = Shader(path + "vertex_shader.vert", path + "fragment_shader.frag");
-    m_shaders["light"] = Shader(path + "vertex_shader.vert", path + "lightSource.frag");
-    m_shaders["skybox"] = Shader(path + "skybox.vert", path + "procedural_sky.frag");
-    m_shaders["terrain"] = Shader(path + "terrain.vert", path + "terrain.frag");
+    auto& assetManager = AssetManager::get();
+    m_shaders["object"] = assetManager.loadShader(path + "vertex_shader.vert", path + "fragment_shader.frag");
+    m_shaders["light"]  = assetManager.loadShader(path + "vertex_shader.vert", path + "lightSource.frag");
+    m_shaders["skybox"] = assetManager.loadShader(path + "skybox.vert", path + "procedural_sky.frag");
+    m_shaders["terrain"] = assetManager.loadShader(path + "terrain.vert", path + "terrain.frag");
 
     // Configure Light/Material Uniforms
-    m_shaders["object"].use();
-    m_shaders["object"].setVec3("light.position", glm::vec3(1.2f, 1.0f, 2.0f));
-    m_shaders["object"].setVec3("light.ambient", glm::vec3(0.05f));
-    m_shaders["object"].setVec3("light.diffuse", glm::vec3(0.5f));
-    m_shaders["object"].setVec3("light.specular", glm::vec3(1.0f));
-    m_shaders["object"].setFloat("material.shininess", 64.0f);
+    const auto objectShader = m_shaders["object"];
+    objectShader->use();
+    objectShader->setVec3("light.position", glm::vec3(1.2f, 1.0f, 2.0f));
+    objectShader->setVec3("light.ambient", glm::vec3(0.05f));
+    objectShader->setVec3("light.diffuse", glm::vec3(0.5f));
+    objectShader->setVec3("light.specular", glm::vec3(1.0f));
+    objectShader->setFloat("material.shininess", 64.0f);
 }
 
 void Renderer::render(Scene &scene, const InputHandler &inputHandler) {
@@ -52,45 +56,39 @@ void Renderer::render(Scene &scene, const InputHandler &inputHandler) {
 void Renderer::renderOpaquePass(const Scene &scene, const InputHandler &inputHandler) {
     const glm::vec3 sunDir = scene.getSunDirection();
 
-    const Shader &terrainShader = m_shaders["terrain"];
+    const auto terrainShader = m_shaders["terrain"];
+    terrainShader->use();
+    terrainShader->setVec3("u_SunDirection", sunDir);
+    terrainShader->setMat4("model", scene.getTerrain().getModelMatrix());
 
-    terrainShader.use();
-    terrainShader.setVec3("u_SunDirection", sunDir);
+    scene.getTerrain().render(*terrainShader);
 
-    // Setup Terrain Matrix
-    auto terrainModel = glm::mat4(1.0f);
-    terrainModel = glm::translate(terrainModel, glm::vec3(-128.0f, -10.0f, -128.0f));
-    terrainShader.setMat4("model", terrainModel);
+    const auto objShader = m_shaders["object"];
+    objShader->use();
+    objShader->setVec3("u_SunDirection", sunDir);
+    objShader->setBool("enableNormalMapping", inputHandler.isNormalMappingEnabled());
 
-    scene.getTerrain().render(terrainShader);
+    for (const auto &object : scene.getObjects()) {
+        glm::mat4 modelMatrix = object.getTransform();
 
-    const Shader &objShader = m_shaders["object"];
-    objShader.use();
-
-    objShader.setVec3("u_SunDirection", sunDir);
-    objShader.setBool("enableNormalMapping", inputHandler.isNormalMappingEnabled());
-
-    for (const auto &model: scene.getModels()) {
-        auto modelMatrix = glm::mat4(1.0f);
-        modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, 10.0f, -3.0f));
-
+        // handle non-uniform scaling
         auto normalMatrix = glm::mat3(glm::transpose(glm::inverse(modelMatrix)));
 
-        objShader.setMat4("model", modelMatrix);
-        objShader.setMat3("normalMatrix", normalMatrix);
+        objShader->setMat4("model", modelMatrix);
+        objShader->setMat3("normalMatrix", normalMatrix);
 
-        model->render(objShader);
+        object.model->render(*objShader);
     }
 }
 
 void Renderer::renderLightSource() {
-    const Shader &shader = m_shaders["light"];
-    shader.use();
+    const auto shader = m_shaders["light"];
+    shader->use();
 
     auto model = glm::mat4(1.0f);
     model = glm::translate(model, glm::vec3(1.2f, 1.0f, 2.0f));
     model = glm::scale(model, glm::vec3(0.5f));
-    shader.setMat4("model", model);
+    shader->setMat4("model", model);
 
     m_lightSourceVao.bind();
     glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -112,11 +110,11 @@ void Renderer::setupLightCube() {
 void Renderer::renderSkybox(const Scene &scene) {
     glDepthFunc(GL_LEQUAL);
 
-    const Shader &shader = m_shaders["skybox"];
-    shader.use();
+    const auto shader = m_shaders["skybox"];
+    shader->use();
 
     scene.getSkybox().render(
-        shader,
+        *shader,
         scene.getSunDirection(),
         scene.getDayTime()
     );
@@ -126,7 +124,5 @@ void Renderer::renderSkybox(const Scene &scene) {
 
 void Renderer::reloadShaders() {
     std::cout << "Reloading shaders..." << std::endl;
-    for (auto &pair: m_shaders) {
-        pair.second.reload();
-    }
+    AssetManager::get().reloadShaders();
 }

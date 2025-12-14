@@ -1,10 +1,14 @@
+// The mesh handles the geometry data (vertices, indices)
+
 #include "Mesh.h"
 
+#include <iostream>
+
 Mesh::Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices,
-           std::vector<std::shared_ptr<Texture> > textures)
+           Material material)
     : m_vertices(std::move(vertices)), // we avoid an extra copy by moving
       m_indices(std::move(indices)),
-      m_textures(std::move(textures)),
+      m_material(std::move(material)),
       m_VAO(0), m_VBO(0), m_EBO(0) {
     setupMesh();
 }
@@ -44,28 +48,12 @@ void Mesh::setupMesh() {
 }
 
 void Mesh::render(const Shader &shader) const {
-    unsigned int diffuseNr = 1;
-    unsigned int specularNr = 1;
-    unsigned int normalNr = 1;
-    unsigned int heightNr = 1;
+    // 1. Bind Material
+    // This handles all the textures (diffuse, specular, normal)
+    // AND the shininess float automatically.
+    m_material.bind(shader);
 
-    for (size_t i = 0; i < m_textures.size(); i++) {
-        std::string number;
-        std::string name = m_textures[i]->getType();
-
-        if (name == "texture_diffuse")
-            number = std::to_string(diffuseNr++);
-        else if (name == "texture_specular")
-            number = std::to_string(specularNr++);
-        else if (name == "texture_normal")
-            number = std::to_string(normalNr++);
-        else if (name == "texture_height")
-            number = std::to_string(heightNr++);
-
-        m_textures[i]->bindToTextureUnit(i);
-        shader.setTextureUnit("material." + name + number, static_cast<int>(i));
-    }
-
+    // 2. Draw Geometry
     glBindVertexArray(m_VAO);
     glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(m_indices.size()), GL_UNSIGNED_INT, nullptr);
 }

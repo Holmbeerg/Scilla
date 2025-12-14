@@ -15,6 +15,8 @@ public:
     };
     Terrain(int width, int depth, const std::vector<float>& heightMap);
     void render(const Shader& shader) const;
+    [[nodiscard]] glm::mat4 getModelMatrix() const;
+    glm::vec3 m_position{0.0f};
 
 private:
     void setupMesh(const std::vector<TerrainVertex>& vertices, const std::vector<unsigned int>& indices);

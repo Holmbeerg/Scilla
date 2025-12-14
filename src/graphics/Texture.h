@@ -8,6 +8,7 @@ public:
     Texture();
 
     explicit Texture(const std::string &imagePath, std::string typeName, bool isColorData = true, bool flipVertically = true);
+    explicit Texture(const std::string& imagePath, bool isColorData = true, bool flipVertically = true);
 
     ~Texture();
 

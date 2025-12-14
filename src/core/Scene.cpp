@@ -1,12 +1,17 @@
+// The Scene owns the instances of all objects in the world.
+// Scene does not load models/textures itself; that is handled by AssetManager.
+
 #include "Scene.h"
 #include <cmath> // For sin/cos
 
+#include "AssetManager.h"
 #include "world/Terrain.h"
 #include "world/TerrainGenerator.h"
 
 Scene::Scene() = default;
 
 void Scene::initialize() {
+    auto& assets = AssetManager::get();
     skybox = std::make_unique<Skybox>();
 
     TerrainParams params;
@@ -20,6 +25,10 @@ void Scene::initialize() {
 
     auto heightData = TerrainGenerator::generateHeights(1024, 1024, params);
     terrain = std::make_unique<Terrain>(1024, 1024, heightData);
+
+    terrain->m_position = glm::vec3(-128.0f, -10.0f, -128.0f);
+
+    // create some scene objects, e.g., trees
 }
 
 void Scene::update(const float deltaTime, const InputHandler& inputHandler) {

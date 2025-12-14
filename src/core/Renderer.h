@@ -8,13 +8,14 @@
 #include "graphics/buffers/VBO.h"
 #include "../graphics/buffers/EBO.h"
 #include "camera/CameraUBO.h"
+#include <memory>
 
 
 class Renderer {
 public:
     void initialize();
     void render(Scene& scene, const InputHandler& inputHandler);
-    void reloadShaders();
+    static void reloadShaders() ;
     void setViewportSize(const int width, const int height) {
         screenWidth = width;
         screenHeight = height;
@@ -27,7 +28,7 @@ public:
 
 private:
     // Resources
-    std::unordered_map<std::string, Shader> m_shaders;
+    std::unordered_map<std::string, std::shared_ptr<Shader>> m_shaders;
     CameraUBO m_cameraUBO;
 
     // Light Source Visualization
