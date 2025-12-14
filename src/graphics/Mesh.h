@@ -5,6 +5,9 @@
 
 #include "Material.h"
 #include "Shader.h"
+#include "buffers/EBO.h"
+#include "buffers/VAO.h"
+#include "buffers/VBO.h"
 
 struct Vertex {
     glm::vec3 Position;
@@ -19,20 +22,22 @@ public:
 
     void render(const Shader &shader) const;
 
+    [[nodiscard]] const VAO& getVAO() const { return m_VAO; }
+    [[nodiscard]] size_t getIndexCount() const { return m_indices.size(); }
+
     [[nodiscard]] const std::vector<Vertex> &getVertices() const { return m_vertices; } // return by reference to avoid copying
     [[nodiscard]] const std::vector<unsigned int> &getIndices() const { return m_indices; }
     [[nodiscard]] const Material &getMaterial() const { return m_material; }
 
-    [[nodiscard]] unsigned int getVAO() const { return m_VAO; }
 
 private:
     std::vector<Vertex> m_vertices;
     std::vector<unsigned int> m_indices;
     Material m_material;
 
-    unsigned int m_VAO;
-    unsigned int m_VBO;
-    unsigned int m_EBO;
+    VAO m_VAO; // Move only
+    VBO m_VBO; // Move only
+    EBO m_EBO; // Move only
 
     void setupMesh();
 };
