@@ -1,11 +1,12 @@
 #pragma once
 #include <glm/glm.hpp>
 #include "../graphics/Shader.h"
+#include "graphics/buffers/VAO.h"
+#include "graphics/buffers/VBO.h"
 
 class Skybox {
 public:
     explicit Skybox();
-    ~Skybox();
 
     Skybox(const Skybox&) = delete;
     Skybox& operator=(const Skybox&) = delete;
@@ -13,5 +14,6 @@ public:
     void render(const Shader &shader, const glm::vec3 &sunDir, float dayTime) const;
 
 private:
-    unsigned int m_VAO, m_VBO;
+    VAO m_VAO;
+    VBO m_VBO;
 };
