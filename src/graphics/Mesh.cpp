@@ -32,6 +32,13 @@ void Mesh::setupMesh() {
 
     m_VAO.enableAttrib(2);
     m_VAO.setAttribFormat(2, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, TexCoords), 0);
+
+    // 3, 4, 5, 6 are used by instanced attributes (model matrix)
+    m_VAO.enableAttrib(7); // Tangent, for normal mapping.
+    m_VAO.setAttribFormat(7, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, Tangent), 0);
+
+    m_VAO.enableAttrib(8); // Bitangent
+    m_VAO.setAttribFormat(8, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, Bitangent), 0);
 }
 
 void Mesh::render(const Shader &shader) const {
