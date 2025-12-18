@@ -11,11 +11,23 @@ find_package(assimp REQUIRED)
 add_library(third_party STATIC
         glad/glad.c
         stb/stb_image.cpp
+
+        # ImGui core files
+        imgui/imgui.cpp
+        imgui/imgui_demo.cpp
+        imgui/imgui_draw.cpp
+        imgui/imgui_tables.cpp
+        imgui/imgui_widgets.cpp
+
+        # ImGui backends
+        imgui/imgui_impl_glfw.cpp
+        imgui/imgui_impl_opengl3.cpp
 )
 
 target_include_directories(third_party PUBLIC
         ${CMAKE_SOURCE_DIR}
         ${CMAKE_SOURCE_DIR}/stb
+        ${CMAKE_SOURCE_DIR}/imgui
 )
 
 add_executable(scilla
@@ -60,7 +72,13 @@ add_executable(scilla
         src/core/AssetManager.cpp
         src/core/AssetManager.h
         src/graphics/Material.h
-        src/world/SceneObject.h
+        src/core/SceneObject.h
+        src/world/VegetationPlacer.cpp
+        src/world/VegetationPlacer.h
+        src/graphics/buffers/InstanceBuffer.cpp
+        src/graphics/buffers/InstanceBuffer.h
+        src/graphics/InstancedModel.cpp
+        src/graphics/InstancedModel.h
 )
 
 target_include_directories(scilla PRIVATE
