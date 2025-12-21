@@ -11,6 +11,8 @@ public:
     void processInput(GLFWwindow *window, float deltaTime);
     void processScroll(double xoffset, double yoffset);
     [[nodiscard]] glm::vec3 getCameraPos() const;
+    void setPosition(const glm::vec3& position);
+    void setPosition(float x, float y, float z);
     [[nodiscard]] float getFov() const;
     [[nodiscard]] glm::mat4 getViewMatrix() const;
     [[nodiscard]] glm::mat4 getProjectionMatrix(float width, float height) const;

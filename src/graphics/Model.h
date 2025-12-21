@@ -12,13 +12,16 @@ public:
     }
 
     void render(const Shader &shader) const;
+    [[nodiscard]] const std::vector<Mesh>& getMeshes() const {
+        return m_meshes;
+    }
 
 private:
     std::vector<Mesh> m_meshes;
 
     // Texture cache. Stores textures already loaded from disk.
-    // shared_ptr is used so multiple meshes can reference the same texture.
-    // The texture is automatically deleted when no mesh uses it anymore.
+    // shared_ptr is used so multiple meshes can reference the same textures.
+    // The textures is automatically deleted when no mesh uses it anymore.
     std::vector<std::shared_ptr<Texture>> m_textures_loaded;
     std::string m_directory;
     bool m_gammaCorrection;

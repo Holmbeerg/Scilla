@@ -4,48 +4,61 @@
 #define STB_PERLIN_IMPLEMENTATION
 #include <stb/stb_perlin.h>
 
-std::vector<float> TerrainGenerator::generateHeights(const int width, const int depth, const TerrainParams& params) {
-    std::vector<float> heights(width * depth);
+// this generates a heightmap using fractal brownian motion (FBM) based on Perlin noise
+std::vector<float> TerrainGenerator::generateHeights(const int worldWidth, const int worldDepth, const TerrainParams& params) {
+    std::vector<float> heights(worldWidth * worldDepth);
 
-    // First pass: Generate base noise (can add more passes like erosion later)
-    for (int z = 0; z < depth; z++) {
-        for (int x = 0; x < width; x++) {
+    // Track the actual range of noise values we generate
+    float minNoiseHeight = std::numeric_limits<float>::max();
+    float maxNoiseHeight = std::numeric_limits<float>::lowest();
+
+    // Pass 1 - Generate Raw Noise Heights
+    for (int z = 0; z < worldDepth; z++) {
+        for (int x = 0; x < worldWidth; x++) {
+
             float amplitude = 1.0f;
             float frequency = 1.0f;
             float noiseHeight = 0.0f;
-            float maxValue = 0.0f; // For normalization
 
-            // FBM: Stack multiple noise octaves
             for (int i = 0; i < params.octaves; i++) {
-                const float sampleX = (x * params.scale * frequency) / 100.0f;
-                const float sampleZ = (z * params.scale * frequency) / 100.0f;
+                const float sampleX = (x * params.noiseScale) * frequency;
+                const float sampleZ = (z * params.noiseScale) * frequency;
 
-                // Perlin noise returns values in [-1, 1]
+                // stb_perlin_noise3 returns [-1, 1] approximately
                 const float perlinValue = stb_perlin_noise3(sampleX, 0.0f, sampleZ, 0, 0, 0);
 
                 noiseHeight += perlinValue * amplitude;
-                maxValue += amplitude;
 
                 amplitude *= params.persistence;
                 frequency *= params.lacunarity;
             }
 
-            // Normalize to [0, 1] range
-            const float normalized = (noiseHeight / maxValue + 1.0f) / 2.0f;
+            // Store raw value
+            heights[z * worldWidth + x] = noiseHeight;
 
-            // Apply power curve for mountain shaping
-            const float shaped = applyPowerCurve(normalized, params.powerCurve);
-
-            // Scale to final height
-            const float finalHeight = params.baseHeight + (shaped * params.heightMultiplier);
-
-            heights[z * width + x] = finalHeight;
+            // Track Min/Max
+            if (noiseHeight > maxNoiseHeight) maxNoiseHeight = noiseHeight;
+            if (noiseHeight < minNoiseHeight) minNoiseHeight = noiseHeight;
         }
     }
+
+    // Pass 2 - Normalize & Apply Height Shaping
+    for (int z = 0; z < worldDepth; z++) {
+        for (int x = 0; x < worldWidth; x++) {
+            // 1. Inverse Lerp: Map [min, max] to [0, 1]
+            const float inverseLerp = (heights[z * worldWidth + x] - minNoiseHeight) / (maxNoiseHeight - minNoiseHeight);
+
+            // 2. Apply Power Curve (Shaping valleys/peaks)
+            const float shapedHeight = applyPowerCurve(inverseLerp, params.powerCurve);
+
+            // 3. Final Scale
+            heights[z * worldWidth + x] = shapedHeight * params.heightMultiplier;
+        }
+    }
+
     return heights;
 }
 
 float TerrainGenerator::applyPowerCurve(const float noise, const float power) {
-    // Higher power = sharper peaks and flatter valleys
     return std::pow(noise, power);
 }

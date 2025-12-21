@@ -46,7 +46,7 @@ Texture::Texture(Texture &&other) noexcept
 // Move assignment
 Texture &Texture::operator=(Texture &&other) noexcept {
     if (this != &other) {
-        // Clean up existing texture
+        // Clean up existing textures
         if (m_textureID != 0) {
             glDeleteTextures(1, &m_textureID);
         }
@@ -94,7 +94,7 @@ void Texture::loadFromFile(const std::string &imagePath, const bool isColorData,
     );
 
     if (!data) {
-        std::cerr << "Failed to load texture: " << imagePath << std::endl;
+        std::cerr << "Failed to load textures: " << imagePath << std::endl;
         return;
     }
 
@@ -112,7 +112,7 @@ void Texture::loadFromFile(const std::string &imagePath, const bool isColorData,
         dataFormat = GL_RED;
         internalFormat = GL_R8;
     } else {
-        std::cerr << "Unsupported number of channels: " << m_nrChannels << " in texture: " << imagePath << std::endl;
+        std::cerr << "Unsupported number of channels: " << m_nrChannels << " in textures: " << imagePath << std::endl;
         stbi_image_free(data);
         return;
     }

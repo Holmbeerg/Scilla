@@ -42,12 +42,8 @@ void Mesh::setupMesh() {
 }
 
 void Mesh::render(const Shader &shader) const {
-    // 1. Bind Material
-    // This handles all the textures (diffuse, specular, normal)
-    // AND the shininess float automatically.
     m_material.bind(shader);
 
-    // 2. Draw Geometry
     m_VAO.bind(); // correct?
     glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(m_indices.size()), GL_UNSIGNED_INT, nullptr);
 }

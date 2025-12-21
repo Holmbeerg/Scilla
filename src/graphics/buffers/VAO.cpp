@@ -34,6 +34,10 @@ void VAO::setAttribFormat(const GLuint index, const GLint size, const GLenum typ
     glVertexArrayAttribBinding(m_vaoID, index, bindingIndex);
 }
 
+void VAO::setBindingDivisor(const GLuint bindingIndex, const GLuint divisor) const {
+    glVertexArrayBindingDivisor(m_vaoID, bindingIndex, divisor);
+}
+
 [[nodiscard]] GLuint VAO::getID() const {
     return m_vaoID;
 }

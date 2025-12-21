@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(OpenGL REQUIRED)
 find_package(glfw3 3.3 REQUIRED)
 find_package(assimp REQUIRED)
+find_package(X11 REQUIRED)
 
 add_library(third_party STATIC
         glad/glad.c
@@ -91,4 +92,6 @@ target_link_libraries(scilla
         glfw
         OpenGL::GL
         dl
-        assimp::assimp)
+        assimp::assimp
+        X11::X11
+)

@@ -5,6 +5,10 @@
 #include "Engine.h"
 #include <iostream>
 
+#include <imgui.h>
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+
 void framebuffer_size_callback(GLFWwindow* window, const int width, const int height) {
     if(auto* engine = static_cast<Engine*>(glfwGetWindowUserPointer(window))) engine->handleResize(width, height);
 }
@@ -44,6 +48,23 @@ bool Engine::initialize(const int width, const int height, const char* title) {
         return false;
     }
 
+    glfwSetFramebufferSizeCallback(m_window, framebuffer_size_callback);
+    glfwSetCursorPosCallback(m_window, mouse_callback);
+    glfwSetScrollCallback(m_window, scroll_callback);
+    glfwSetKeyCallback(m_window, keyCallbackStatic);
+    glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // enable keyboard controls
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;     // enable docking
+
+    ImGui::StyleColorsDark(); // Styling
+
+    ImGui_ImplGlfw_InitForOpenGL(m_window, true);
+    ImGui_ImplOpenGL3_Init("#version 460");
+
     // Initialize Components
     m_inputHandler = std::make_unique<InputHandler>(m_window);
 
@@ -52,13 +73,6 @@ bool Engine::initialize(const int width, const int height, const char* title) {
 
     m_scene = std::make_unique<Scene>();
     m_scene->initialize();
-
-    // Set Callbacks
-    glfwSetFramebufferSizeCallback(m_window, framebuffer_size_callback);
-    glfwSetCursorPosCallback(m_window, mouse_callback);
-    glfwSetScrollCallback(m_window, scroll_callback);
-    glfwSetKeyCallback(m_window, keyCallbackStatic);
-    glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     return true;
 }
@@ -88,6 +102,11 @@ void Engine::run() {
 }
 
 void Engine::shutdown() {
+    // Cleanup ImGui
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
     glfwTerminate();
 }
 
@@ -102,6 +121,12 @@ void Engine::handleMouse(const double xpos, const double ypos) const {
         std::cout << "ERROR: m_scene is null!" << std::endl;
         return;
     }
+
+    if (const ImGuiIO& io = ImGui::GetIO(); io.WantCaptureMouse) {
+        m_scene->getCamera().setFirstMouse(true);
+        return;
+    }
+
     if (glfwGetInputMode(m_window, GLFW_CURSOR) == GLFW_CURSOR_NORMAL) {
         m_scene->getCamera().setFirstMouse(true);
         return;

@@ -1,198 +1,144 @@
 #version 460 core
 out vec4 FragColor;
 
-in float Height;
-in vec3 Normal;
 in vec3 FragPos;
-in vec2 TexCoords;
-in vec3 Tangent;
-in vec3 Bitangent;
+in vec3 Normal;
+in float Height;
 
-// Textures
 uniform sampler2D grassTexture;
 uniform sampler2D grassNormal;
+uniform sampler2D grassAO;
+
 uniform sampler2D rockTexture;
 uniform sampler2D rockNormal;
+uniform sampler2D rockAO;
+
 uniform sampler2D snowTexture;
 uniform sampler2D snowNormal;
+uniform sampler2D snowAO;
 
-// Camera
+uniform vec3 u_SunDirection; // normalized
+uniform float u_RockHeight;
+uniform float u_SnowHeight;
+
 layout (std140, binding = 0) uniform CameraData {
     mat4 view;
     mat4 projection;
     vec3 viewPos;
 };
 
-uniform vec3 u_SunDirection = vec3(0.3, 0.8, 0.4);
-
-vec3 getSunColor(float sunHeight) {
-    vec3 dayColor = vec3(1.0, 0.98, 0.95);
-    vec3 sunsetColor = vec3(1.0, 0.6, 0.3);
-    vec3 nightColor = vec3(0.3, 0.4, 0.6);
-
-    float sunsetFactor = 1.0 - smoothstep(0.0, 0.3, abs(sunHeight));
-    float dayFactor = smoothstep(-0.1, 0.3, sunHeight);
-
-    vec3 color = mix(nightColor, sunsetColor, sunsetFactor);
-    color = mix(color, dayColor, dayFactor);
-
-    return color;
-}
-
-vec3 getSkyAmbient(float sunHeight) {
-    vec3 dayAmbient = vec3(0.5, 0.7, 1.0);
-    vec3 sunsetAmbient = vec3(0.6, 0.4, 0.5);
-    vec3 nightAmbient = vec3(0.1, 0.15, 0.3);
-
-    float sunsetFactor = 1.0 - smoothstep(0.0, 0.3, abs(sunHeight));
-    float dayFactor = smoothstep(-0.1, 0.3, sunHeight);
-
-    vec3 ambient = mix(nightAmbient, sunsetAmbient, sunsetFactor);
-    ambient = mix(ambient, dayAmbient, dayFactor);
-
-    return ambient;
-}
-
-struct SurfaceMaterial {
+struct Surface {
     vec3 albedo;
     vec3 normal;
+    float ao;
 };
 
-SurfaceMaterial sampleMaterial(sampler2D albedoTex, sampler2D normalTex, vec2 uv, mat3 TBN) {
-    SurfaceMaterial mat;
-
-    // Multi-scale sampling to break up tiling
-    vec3 detail = texture(albedoTex, uv * 10.0).rgb;
-    vec3 mid = texture(albedoTex, uv * 4.0).rgb;
-    vec3 macro = texture(albedoTex, uv * 0.5).rgb;
-    mat.albedo = detail * 0.5 + mid * 0.3 + macro * 0.2;
-
-    // Sample normal map, uv = TexCoords
-    vec3 normalDetail = texture(normalTex, uv * 20.0).rgb * 2.0 - 1.0; // Convert from [0,1] to [-1,1]. Texture stores file stores colors in the range [0,1]
-    vec3 normalMid = texture(normalTex, uv * 5.0).rgb * 2.0 - 1.0;
-    vec3 tangentNormal = normalize(normalDetail * 0.7 + normalMid * 0.3);
-
-    // Transform from tangent space to world space
-    mat.normal = normalize(TBN * tangentNormal);
-
-    return mat;
+vec3 triplanarBlend(vec3 n) {
+    vec3 w = abs(n);
+    w = max(w, 0.00001);
+    return w / (w.x + w.y + w.z);
 }
 
-struct BlendedMaterial {
-    vec3 albedo;
-    vec3 normal;
-};
+vec3 sampleTriplanarColor(sampler2D tex, vec3 p, vec3 n, float scale) {
+    vec3 w = triplanarBlend(n);
 
-BlendedMaterial getTerrainMaterial(float height, float slope, vec2 uv, mat3 TBN) {
-    // Sample all three materials
-    SurfaceMaterial grass = sampleMaterial(grassTexture, grassNormal, uv, TBN);
-    SurfaceMaterial rock = sampleMaterial(rockTexture, rockNormal, uv, TBN);
-    SurfaceMaterial snow = sampleMaterial(snowTexture, snowNormal, uv, TBN);
+    vec3 x = texture(tex, p.yz * scale).rgb;
+    vec3 y = texture(tex, p.xz * scale).rgb;
+    vec3 z = texture(tex, p.xy * scale).rgb;
 
-    // Calculate blend weights
-    float grassWeight = 0.0;
-    float rockWeight = 0.0;
-    float snowWeight = 0.0;
-
-    // Slope-based blending
-    float slopeFactor = smoothstep(0.15, 0.5, slope);
-
-    // Height-based blending with smooth transitions
-    if (height < 8.0) {
-        grassWeight = 1.0 - slopeFactor;
-        rockWeight = slopeFactor;
-    }
-    else if (height < 18.0) {
-        float heightBlend = smoothstep(8.0, 18.0, height);
-        grassWeight = (1.0 - heightBlend) * (1.0 - slopeFactor * 0.8);
-        rockWeight = heightBlend * 0.7 + slopeFactor * 0.8;
-        snowWeight = heightBlend * 0.3 * (1.0 - slopeFactor);
-    }
-    else if (height < 32.0) {
-        float snowBlend = smoothstep(18.0, 32.0, height);
-        rockWeight = (1.0 - snowBlend) * (1.0 - slopeFactor * 0.3);
-        snowWeight = snowBlend * (1.0 - slopeFactor * 0.6);
-        rockWeight += slopeFactor * 0.6;
-    }
-    else {
-        snowWeight = 1.0 - slopeFactor * 0.4;
-        rockWeight = slopeFactor * 0.4;
-    }
-
-    // Normalize weights
-    float totalWeight = grassWeight + rockWeight + snowWeight;
-    grassWeight /= totalWeight;
-    rockWeight /= totalWeight;
-    snowWeight /= totalWeight;
-
-    // Blend materials
-    BlendedMaterial result;
-    result.albedo = grass.albedo * grassWeight +
-    rock.albedo * rockWeight +
-    snow.albedo * snowWeight;
-    result.normal = normalize(grass.normal * grassWeight +
-    rock.normal * rockWeight +
-    snow.normal * snowWeight);
-
-    return result;
+    return x * w.x + y * w.y + z * w.z;
 }
 
-vec3 calculateLighting(vec3 albedo, vec3 normal, vec3 fragPos, float sunHeight) {
-    vec3 N = normalize(normal);
-    vec3 L = normalize(u_SunDirection);
-    vec3 V = normalize(viewPos - fragPos);
-    vec3 H = normalize(L + V);
+vec3 sampleTriplanarNormal(sampler2D tex, vec3 p, vec3 n, float scale) {
+    vec3 w = triplanarBlend(n);
 
-    vec3 sunColor = getSunColor(sunHeight);
-    vec3 skyColor = getSkyAmbient(sunHeight);
+    vec3 nx = texture(tex, p.yz * scale).xyz * 2.0 - 1.0;
+    vec3 ny = texture(tex, p.xz * scale).xyz * 2.0 - 1.0;
+    vec3 nz = texture(tex, p.xy * scale).xyz * 2.0 - 1.0;
 
-    float NdotL = dot(N, L);
-    float diffuseWrap = max((NdotL + 0.3) / 1.3, 0.0);
+    nx = vec3(0.0, nx.y, nx.x);
+    ny = vec3(ny.x, 0.0, ny.y);
+    nz = vec3(nz.x, nz.y, 0.0);
 
-    float sunIntensity = smoothstep(-0.2, 0.1, sunHeight);
-    vec3 diffuse = diffuseWrap * sunColor * sunIntensity;
+    return normalize(nx * w.x + ny * w.y + nz * w.z);
+}
 
-    float spec = pow(max(dot(N, H), 0.0), 64.0);
-    vec3 specular = spec * sunColor * 0.15 * sunIntensity;
+Surface sampleSurface(
+sampler2D albedo,
+sampler2D normal,
+sampler2D ao,
+vec3 p,
+vec3 n
+) {
+    const float SCALE = 0.05;
 
-    float skyLight = max(dot(N, vec3(0, 1, 0)), 0.0) * 0.5 + 0.5;
-    vec3 ambient = mix(skyColor * 0.05, skyColor * 0.2, skyLight);
+    Surface s;
+    s.albedo = sampleTriplanarColor(albedo, p, n, SCALE);
+    s.normal = sampleTriplanarNormal(normal, p, n, SCALE);
+    s.ao     = clamp(sampleTriplanarColor(ao, p, n, SCALE).r, 0.4, 1.0);
 
-    // Ambient occlusion based on slope
-    float ao = 1.0 - (1.0 - N.y) * 0.3;
+    return s;
+}
 
-    vec3 lighting = (ambient * ao + diffuse + specular) * albedo;
+Surface blendTerrain(vec3 p, vec3 n) {
 
-    return lighting;
+    Surface grass = sampleSurface(grassTexture, grassNormal, grassAO, p, n);
+    Surface rock  = sampleSurface(rockTexture,  rockNormal,  rockAO,  p, n);
+    Surface snow  = sampleSurface(snowTexture,  snowNormal,  snowAO,  p, n);
+
+    float slope = smoothstep(0.2, 0.8, 1.0 - abs(n.y));
+
+    float noise = fract(sin(dot(p.xz, vec2(12.9898, 78.233))) * 43758.5453);
+    float h = Height + noise * 1.5;
+
+    float grassW = 1.0 - smoothstep(u_RockHeight - 2.0, u_RockHeight + 2.0, h);
+    float snowW  = smoothstep(u_SnowHeight - 2.0, u_SnowHeight + 2.0, h);
+    float rockW  = 1.0 - grassW - snowW;
+
+    grassW *= (1.0 - slope);
+    snowW  *= (1.0 - slope);
+    rockW  += slope;
+
+    float sum = grassW + rockW + snowW;
+    grassW /= sum;
+    rockW  /= sum;
+    snowW  /= sum;
+
+    Surface s;
+    s.albedo = grass.albedo * grassW + rock.albedo * rockW + snow.albedo * snowW;
+    s.normal = normalize(grass.normal * grassW + rock.normal * rockW + snow.normal * snowW);
+    s.ao     = grass.ao * grassW     + rock.ao * rockW     + snow.ao * snowW;
+
+    return s;
+}
+
+vec3 lighting(Surface s, vec3 baseNormal) {
+
+    vec3 N = normalize(s.normal);
+    vec3 L = normalize(-u_SunDirection);
+
+    float NdotL = max(dot(N, L), 0.0);
+
+    // Hemisphere ambient
+    vec3 sky = vec3(0.45, 0.55, 0.75);
+    vec3 ground = vec3(0.15, 0.12, 0.1);
+    float hemi = clamp(baseNormal.y, 0.0, 1.0);
+
+    vec3 ambient = s.albedo * mix(ground, sky, hemi) * 0.6 * s.ao;
+
+    // Lambert diffuse
+    vec3 sunColor = vec3(1.0, 0.97, 0.9);
+    vec3 diffuse = s.albedo * sunColor * NdotL;
+
+    return ambient + diffuse;
 }
 
 void main() {
-    // Build TBN matrix for normal mapping
-    vec3 T = normalize(Tangent); // we need to normalize again as the rasterizer may not provide normalized vectors
-    vec3 B = normalize(Bitangent);
-    vec3 N = normalize(Normal);
-    mat3 TBN = mat3(T, B, N);
 
-    // Calculate slope
-    float slope = 1.0 - Normal.y;
+    vec3 baseNormal = normalize(Normal);
+    Surface surface = blendTerrain(FragPos, baseNormal);
 
-    // Get material properties
-    BlendedMaterial material = getTerrainMaterial(Height, slope, TexCoords, TBN);
+    vec3 color = lighting(surface, baseNormal);
 
-    // Calculate sun height
-    float sunHeight = u_SunDirection.y;
-
-    // Calculate lighting with time-of-day awareness
-    vec3 litColor = calculateLighting(material.albedo, material.normal, FragPos, sunHeight);
-    litColor *= 0.5;
-
-    vec3 finalColor = litColor;
-
-    // Tone mapping
-    finalColor = finalColor / (finalColor + vec3(1.0));
-
-    // Gamma correction
-    finalColor = pow(finalColor, vec3(1.0/2.2));
-
-    FragColor = vec4(finalColor, 1.0);
+    FragColor = vec4(color, 1.0);
 }

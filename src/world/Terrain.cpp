@@ -2,152 +2,195 @@
 #include <iostream>
 #include <glm/ext/matrix_transform.hpp>
 
-Terrain::Terrain(const int width, const int depth, const std::vector<float>& heightMap)
-    : m_heights(heightMap), m_VAO(0), m_VBO(0), m_EBO(0), m_indexCount(0), m_width(width), m_depth(depth) {
+Terrain::Terrain(const int worldWidth, const int worldDepth, const std::vector<float>& heightMap)
+    : m_heights(heightMap),
+      m_indexCount(0),
+      m_worldWidth(worldWidth),
+      m_worldDepth(worldDepth) {
 
+    std::vector<TerrainVertex> vertices = generateVertices();
+    calculateNormals(vertices, m_worldWidth, m_worldDepth);
+    const std::vector<unsigned int> indices = generateIndices();
+
+    m_indexCount = static_cast<GLsizei>(indices.size());
+    setupMesh(vertices, indices);
+    loadTextures();
+
+    std::cout << indices.size() / 3 << " total triangles in terrain mesh." << std::endl;
+}
+
+std::vector<Terrain::TerrainVertex> Terrain::generateVertices() const {
     std::vector<TerrainVertex> vertices;
-    std::vector<unsigned int> indices;
+    vertices.reserve(m_worldWidth * m_worldDepth);
 
-    // 1. BUILD VERTICES
-    for (int z = 0; z < depth; z++) {
-        for (int x = 0; x < width; x++) {
-            float y = heightMap[z * width + x];
+    for (int z = 0; z < m_worldDepth; z++) {
+        for (int x = 0; x < m_worldWidth; x++) {
+            const float y = m_heights[z * m_worldWidth + x];
 
             TerrainVertex v{};
             v.Position = glm::vec3(x, y, z);
-            v.Normal = glm::vec3(0.0f, 1.0f, 0.0f); // Will calculate proper normals below
-            v.TexCoords = glm::vec2(static_cast<float>(x) / 10.0f, static_cast<float>(z) / 10.0f);
+            v.Normal = glm::vec3(0.0f, 1.0f, 0.0f);
+            v.TexCoords = glm::vec2(
+                static_cast<float>(x) / m_worldWidth,
+                static_cast<float>(z) / m_worldDepth
+            );
 
             vertices.push_back(v);
         }
     }
 
-    // https://stackoverflow.com/questions/13983189/opengl-how-to-calculate-normals-in-a-terrain-height-grid
-    // 2. CALCULATE PROPER NORMALS - Finite Difference Method
-    for (int z = 1; z < depth - 1; z++) {
-        for (int x = 1; x < width - 1; x++) {
-            int idx = z * width + x;
+    return vertices;
+}
 
-            float hL = heightMap[z * width + (x - 1)];
-            float hR = heightMap[z * width + (x + 1)];
-            float hD = heightMap[(z - 1) * width + x];
-            float hU = heightMap[(z + 1) * width + x];
+std::vector<unsigned int> Terrain::generateIndices() const {
+    std::vector<unsigned int> indices;
+    indices.reserve((m_worldWidth - 1) * (m_worldDepth - 1) * 6);
 
-            // Calculate normal using finite difference
-            glm::vec3 normal;
-            normal.x = hL - hR;
-            normal.y = 2.0f; // Y is up
-            normal.z = hD - hU;
-            vertices[idx].Normal = glm::normalize(normal);
-
-            glm::vec3 tangentX(2.0f, hR - hL, 0.0f);
-            vertices[idx].Tangent = glm::normalize(tangentX); // tangent and bitangent are needed for normal mapping, transform normal map from tangent space to world space
-
-            glm::vec3 tangentZ(0.0f, hU - hD, 2.0f);
-            vertices[idx].Bitangent = glm::normalize(tangentZ);
-        }
-    }
-
-    // 3. BUILD INDICES (Quads made of 2 triangles)
-    for (int z = 0; z < depth - 1; z++) {
-        for (int x = 0; x < width - 1; x++) {
-            const int topLeft = (z * width) + x;
+    for (int z = 0; z < m_worldDepth - 1; z++) {
+        for (int x = 0; x < m_worldWidth - 1; x++) {
+            const int topLeft = (z * m_worldWidth) + x;
             const int topRight = topLeft + 1;
-            const int bottomLeft = ((z + 1) * width) + x;
+            const int bottomLeft = ((z + 1) * m_worldWidth) + x;
             const int bottomRight = bottomLeft + 1;
 
+            // First triangle
             indices.push_back(topLeft);
             indices.push_back(bottomLeft);
             indices.push_back(topRight);
 
+            // Second triangle
             indices.push_back(topRight);
             indices.push_back(bottomLeft);
             indices.push_back(bottomRight);
         }
     }
 
-    m_indexCount = static_cast<GLsizei>(indices.size());
-
-    // 4. UPLOAD
-    setupMesh(vertices, indices);
-
-    // 5. LOAD TEXTURES (Albedo + Normal maps)
-    const std::string texPath = "/home/holmberg/development/Scilla/assets/textures/"; // TODO: Make relative path
-
-    m_grassTexture = Texture(texPath + "coast_sand_rocks_02_diff_2k.jpg", "texture_diffuse", true, false);
-    m_grassNormal  = Texture(texPath + "coast_sand_rocks_02_nor_gl_2k.png", "texture_normal", true, false);
-
-    m_rockTexture  = Texture(texPath + "rock_face_03_diff_2k.jpg", "texture_diffuse", true, false);
-    m_rockNormal   = Texture(texPath + "rock_face_03_nor_gl_2k.png", "texture_normal", true, false);
-
-    m_snowTexture  = Texture(texPath + "snow_field_aerial_col_2k.jpg", "texture_diffuse", true, false);
-    m_snowNormal   = Texture(texPath + "snow_field_aerial_nor_gl_2k.png", "texture_normal", true, false);
-
-    std::cout << indices.size() / 3 << " total triangles in terrain mesh." << std::endl;
+    return indices;
 }
 
+void Terrain::calculateNormals(std::vector<TerrainVertex>& vertices, const int worldWidth, const int worldDepth) const {
+    auto getHeightSafe = [&](int x, int z) -> float {
+        x = std::max(0, std::min(x, worldWidth - 1));
+        z = std::max(0, std::min(z, worldDepth - 1));
+        return m_heights[z * worldWidth + x];
+    };
+
+    for (int z = 1; z < m_worldDepth - 1; z++) {
+        for (int x = 1; x < m_worldWidth - 1; x++) {
+            int idx = z * m_worldWidth + x;
+
+            float hL = getHeightSafe(x - 1, z);
+            float hR = getHeightSafe(x + 1, z);
+            float hD = getHeightSafe(x, z - 1);
+            float hU = getHeightSafe(x, z + 1);
+
+            // Calculate normal using finite difference
+            glm::vec3 normal;
+            normal.x = hL - hR;
+            normal.y = 2.0f;
+            normal.z = hD - hU;
+            vertices[idx].Normal = glm::normalize(normal);
+
+            // Calculate tangent and bitangent for normal mapping
+            glm::vec3 tangentX(2.0f, hR - hL, 0.0f);
+            vertices[idx].Tangent = glm::normalize(tangentX);
+
+            glm::vec3 tangentZ(0.0f, hU - hD, 2.0f);
+            vertices[idx].Bitangent = glm::normalize(tangentZ);
+        }
+    }
+}
+
+void Terrain::loadTextures() {
+    const std::string texPath = "/home/holmberg/development/Scilla/assets/textures/terrain/";
+
+    m_grassTexture   = Texture(texPath + "Grass001_2K-PNG_Color.png", "texture_diffuse", true, false);
+    m_grassNormal    = Texture(texPath + "Grass001_2K-PNG_NormalGL.png", "texture_normal", true, false);
+    m_grassRoughness = Texture(texPath + "Grass001_2K-PNG_Roughness.png", "texture_roughness", false, false);
+    m_grassAO        = Texture(texPath + "Grass001_2K-PNG_AmbientOcclusion.png", "texture_ao", false, false);
+
+    m_rockTexture   = Texture(texPath + "rock_face_03_diff_2k.jpg", "texture_diffuse", true, false);
+    m_rockNormal    = Texture(texPath + "rock_face_03_nor_gl_2k.png", "texture_normal", true, false);
+    m_rockAO        = Texture(texPath + "rock_face_03_ao_2k.png", "texture_ao", false, false);
+    m_rockRoughness = Texture(texPath + "rock_face_03_rough_2k.png", "texture_roughness", false, false);
+
+    m_snowTexture   = Texture(texPath + "snow_field_aerial_col_2k.jpg", "texture_diffuse", true, false);
+    m_snowNormal    = Texture(texPath + "snow_field_aerial_nor_gl_2k.png", "texture_normal", true, false);
+    m_snowAO        = Texture(texPath + "snow_field_aerial_ao_2k.png", "texture_ao", false, false);
+    m_snowRoughness = Texture(texPath + "snow_field_aerial_rough_2k.png", "texture_roughness", false, false);
+}
 
 void Terrain::setupMesh(const std::vector<TerrainVertex>& vertices, const std::vector<unsigned int>& indices) {
-    glCreateVertexArrays(1, &m_VAO);
-    glCreateBuffers(1, &m_VBO);
-    glCreateBuffers(1, &m_EBO);
+    m_VAO.generate();
+    m_VBO.generate();
+    m_EBO.generate();
 
-    glNamedBufferStorage(m_VBO, sizeof(TerrainVertex) * vertices.size(), vertices.data(), 0);
-    glNamedBufferStorage(m_EBO, sizeof(unsigned int) * indices.size(), indices.data(), 0);
+    m_VBO.setData(vertices.data(), vertices.size() * sizeof(TerrainVertex));
+    m_EBO.setData(indices.data(), indices.size() * sizeof(unsigned int));
 
-    // Link buffers to VAO
-    glVertexArrayElementBuffer(m_VAO, m_EBO);
-    // Binding Index 0 is linked to m_VBO, with stride sizeof(TerrainVertex)
-    glVertexArrayVertexBuffer(m_VAO, 0, m_VBO, 0, sizeof(TerrainVertex));
+    m_VAO.bindVBO(m_VBO, 0, sizeof(TerrainVertex));
+    m_VAO.bindEBO(m_EBO);
 
     // Position
-    glEnableVertexArrayAttrib(m_VAO, 0);
-    glVertexArrayAttribFormat(m_VAO, 0, 3, GL_FLOAT, GL_FALSE, offsetof(TerrainVertex, Position));
-    glVertexArrayAttribBinding(m_VAO, 0, 0);
+    m_VAO.enableAttrib(0);
+    m_VAO.setAttribFormat(0, 3, GL_FLOAT, GL_FALSE, offsetof(TerrainVertex, Position), 0);
 
     // Normal
-    glEnableVertexArrayAttrib(m_VAO, 1);
-    glVertexArrayAttribFormat(m_VAO, 1, 3, GL_FLOAT, GL_FALSE, offsetof(TerrainVertex, Normal));
-    glVertexArrayAttribBinding(m_VAO, 1, 0);
+    m_VAO.enableAttrib(1);
+    m_VAO.setAttribFormat(1, 3, GL_FLOAT, GL_FALSE, offsetof(TerrainVertex, Normal), 0);
 
-    // TexCoords (UV)
-    glEnableVertexArrayAttrib(m_VAO, 2);
-    glVertexArrayAttribFormat(m_VAO, 2, 2, GL_FLOAT, GL_FALSE, offsetof(TerrainVertex, TexCoords));
-    glVertexArrayAttribBinding(m_VAO, 2, 0);
+    // TexCoords
+    m_VAO.enableAttrib(2);
+    m_VAO.setAttribFormat(2, 2, GL_FLOAT, GL_FALSE, offsetof(TerrainVertex, TexCoords), 0);
 
     // Tangent
-    glEnableVertexArrayAttrib(m_VAO, 3);
-    glVertexArrayAttribFormat(m_VAO, 3, 3, GL_FLOAT, GL_FALSE, offsetof(TerrainVertex, Tangent));
-    glVertexArrayAttribBinding(m_VAO, 3, 0);
+    m_VAO.enableAttrib(3);
+    m_VAO.setAttribFormat(3, 3, GL_FLOAT, GL_FALSE, offsetof(TerrainVertex, Tangent), 0);
 
     // Bitangent
-    glEnableVertexArrayAttrib(m_VAO, 4);
-    glVertexArrayAttribFormat(m_VAO, 4, 3, GL_FLOAT, GL_FALSE, offsetof(TerrainVertex, Bitangent));
-    glVertexArrayAttribBinding(m_VAO, 4, 0);
+    m_VAO.enableAttrib(4);
+    m_VAO.setAttribFormat(4, 3, GL_FLOAT, GL_FALSE, offsetof(TerrainVertex, Bitangent), 0);
 }
+
 void Terrain::render(const Shader& shader) const {
-    // Bind albedo textures
     m_grassTexture.bindToTextureUnit(0);
-    m_rockTexture.bindToTextureUnit(1);
-    m_snowTexture.bindToTextureUnit(2);
+    m_grassNormal.bindToTextureUnit(1);
+    m_grassRoughness.bindToTextureUnit(2);
+    m_grassAO.bindToTextureUnit(3);
 
-    // Bind normal maps
-    m_grassNormal.bindToTextureUnit(3);
-    m_rockNormal.bindToTextureUnit(4);
-    m_snowNormal.bindToTextureUnit(5);
+    m_rockTexture.bindToTextureUnit(4);
+    m_rockNormal.bindToTextureUnit(5);
+    m_rockRoughness.bindToTextureUnit(6);
+    m_rockAO.bindToTextureUnit(7);
 
-    // Set uniforms
+    m_snowTexture.bindToTextureUnit(8);
+    m_snowNormal.bindToTextureUnit(9);
+    m_snowRoughness.bindToTextureUnit(10);
+    m_snowAO.bindToTextureUnit(11);
+
+    shader.use();
+
     shader.setTextureUnit("grassTexture", 0);
-    shader.setTextureUnit("rockTexture", 1);
-    shader.setTextureUnit("snowTexture", 2);
-    shader.setTextureUnit("grassNormal", 3);
-    shader.setTextureUnit("rockNormal", 4);
-    shader.setTextureUnit("snowNormal", 5);
+    shader.setTextureUnit("grassNormal", 1);
+    shader.setTextureUnit("grassRoughness", 2);
+    shader.setTextureUnit("grassAO", 3);
 
-    glBindVertexArray(m_VAO);
+    shader.setTextureUnit("rockTexture", 4);
+    shader.setTextureUnit("rockNormal", 5);
+    shader.setTextureUnit("rockRoughness", 6);
+    shader.setTextureUnit("rockAO", 7);
+
+    shader.setTextureUnit("snowTexture", 8);
+    shader.setTextureUnit("snowNormal", 9);
+    shader.setTextureUnit("snowRoughness", 10);
+    shader.setTextureUnit("snowAO", 11);
+
+    m_VAO.bind();
     glDrawElements(GL_TRIANGLES, m_indexCount, GL_UNSIGNED_INT, nullptr);
 }
 
 glm::mat4 Terrain::getModelMatrix() const {
-    return glm::translate(glm::mat4(1.0f), m_position);
+    glm::mat4 model(1.0f);
+    model = glm::translate(model, m_position);
+    return model;
 }

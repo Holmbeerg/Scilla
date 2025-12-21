@@ -6,7 +6,7 @@
 #include "graphics/Shader.h"
 #include "graphics/Model.h"
 
-AssetManager &AssetManager::get() {
+AssetManager &AssetManager::get() { // Meyers singleton
     static AssetManager instance;
     return instance;
 }
@@ -15,14 +15,15 @@ std::shared_ptr<Texture> AssetManager::loadTexture(
     const std::string &path,
     bool isColorData,
     bool flipVertically) {
-    if (m_textures.contains(path))
-        return m_textures[path];
+    if (m_textures.contains(path)) {
+        return m_textures[path]; // Return cached textures
+    }
 
     auto texture = std::make_shared<Texture>(
         path, isColorData, flipVertically);
 
-    m_textures[path] = texture;
-    return texture;
+    m_textures[path] = texture; // Cache the loaded textures
+    return texture; // Return copy of shared_ptr
 }
 
 std::shared_ptr<Shader> AssetManager::loadShader(

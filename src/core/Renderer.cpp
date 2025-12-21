@@ -6,6 +6,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "AssetManager.h"
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 #include "graphics/Cube.h"
 
 void Renderer::initialize() {
@@ -20,10 +23,12 @@ void Renderer::initialize() {
 void Renderer::setupShaders() {
     const std::string path = "assets/shaders/";
     auto& assetManager = AssetManager::get();
+
     m_shaders["object"] = assetManager.loadShader(path + "vertex_shader.vert", path + "fragment_shader.frag");
     m_shaders["light"]  = assetManager.loadShader(path + "vertex_shader.vert", path + "lightSource.frag");
     m_shaders["skybox"] = assetManager.loadShader(path + "skybox.vert", path + "procedural_sky.frag");
     m_shaders["terrain"] = assetManager.loadShader(path + "terrain.vert", path + "terrain.frag");
+    m_shaders["vegetation"] = assetManager.loadShader(path + "vegetation.vert", path + "vegetation.frag");
 
     // Configure Light/Material Uniforms
     const auto objectShader = m_shaders["object"];
@@ -33,40 +38,64 @@ void Renderer::setupShaders() {
     objectShader->setVec3("light.diffuse", glm::vec3(0.5f));
     objectShader->setVec3("light.specular", glm::vec3(1.0f));
     objectShader->setFloat("material.shininess", 64.0f);
+
+    const auto vegShader = m_shaders["vegetation"];
+    vegShader->use();
+    vegShader->setTextureUnit("material.diffuse", 0);
+    vegShader->setTextureUnit("material.normal", 1);
+    vegShader->setTextureUnit("material.arm", 2);
 }
 
 void Renderer::render(Scene &scene, const InputHandler &inputHandler) {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // 1. Update Camera UBO (Sends View/Proj/Pos to binding point 0)
-    const Camera &cam = scene.getCamera();
+    // Start imGui frame
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
 
+    // Draw ImGui
+    scene.imGui();
+
+    // Update Camera UBO (Sends View/Proj/Pos to binding point 0)
+    const Camera &cam = scene.getCamera();
     m_cameraUBO.setViewProjection(
         cam.getViewMatrix(),
         cam.getProjectionMatrix(static_cast<float>(screenWidth), static_cast<float>(screenHeight)),
         cam.getCameraPos());
 
-    // 2. Render Passes
+    // Render Passes
     renderOpaquePass(scene, inputHandler);
     renderLightSource(); // Draw the light cube
     renderSkybox(scene); // Draw skybox last, reducing fragment shader calls
+
+    // Finalize imGui frame
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 void Renderer::renderOpaquePass(const Scene &scene, const InputHandler &inputHandler) {
     const glm::vec3 sunDir = scene.getSunDirection();
 
     const auto terrainShader = m_shaders["terrain"];
+    const auto& material = scene.getTerrainMaterial();
     terrainShader->use();
     terrainShader->setVec3("u_SunDirection", sunDir);
     terrainShader->setMat4("model", scene.getTerrain().getModelMatrix());
-
+    terrainShader->setFloat("u_RockHeight", material.rockHeight);
+    terrainShader->setFloat("u_SnowHeight", material.snowHeight);
     scene.getTerrain().render(*terrainShader);
 
-    const auto objShader = m_shaders["object"];
+    const auto vegShader = m_shaders["vegetation"];; // vegetation shader for trees, grass, etc.
+    vegShader->use();
+    vegShader->setVec3("u_SunDirection", sunDir); // sun moves so we set this uniform every frame
+
+    const auto objShader = m_shaders["object"]; // object shader for things like trees, buildings, etc.
     objShader->use();
     objShader->setVec3("u_SunDirection", sunDir);
     objShader->setBool("enableNormalMapping", inputHandler.isNormalMappingEnabled());
+    scene.getVegetation().render(*this, *vegShader);
 
     for (const auto &object : scene.getObjects()) {
         glm::mat4 modelMatrix = object.getTransform();
@@ -80,6 +109,28 @@ void Renderer::renderOpaquePass(const Scene &scene, const InputHandler &inputHan
         object.model->render(*objShader);
     }
 }
+
+void Renderer::renderInstanced(const InstancedModel &batch, const Shader &shader) {
+    if (batch.getInstanceCount() == 0) return;
+
+    shader.use();
+
+    for (const auto &mesh : batch.getModel()->getMeshes()) {
+        mesh.getMaterial().bind(shader);
+
+        const auto& vao = mesh.getVAO();
+        glBindVertexArray(vao.getID());
+
+        glDrawElementsInstanced(
+            GL_TRIANGLES,
+            static_cast<GLsizei>(mesh.getIndexCount()),
+            GL_UNSIGNED_INT,
+            nullptr,
+            batch.getInstanceCount()
+        );
+    }
+}
+
 
 void Renderer::renderLightSource() {
     const auto shader = m_shaders["light"];

@@ -8,7 +8,7 @@ Camera::Camera()
     : m_yaw(0.0f), m_pitch(0.0f), m_roll(0.0f),
       m_lastX(400.0f), m_lastY(300.0f),
       m_xOffset(0.0f), m_yOffset(0.0f),
-      m_sensitivity(0.1f), m_speed(10.0f),
+      m_sensitivity(0.1f), m_speed(30.0f),
       m_fov(45.0f), m_firstMouse(true),
       m_direction(0.0f, 0.0f, 0.0f), m_cameraPos(0.0f, 0.0f, 3.0f), m_cameraFront(0.0f, 0.0f, -3.0f),
       m_cameraUp(0.0f, 1.0f, 0.0f), m_cameraRight(0.0f, 0.0f, 0.0f), m_worldUp(0.0f, 1.0f, 0.0f),
@@ -58,6 +58,10 @@ void Camera::updateView() {
 }
 
 void Camera::processInput(GLFWwindow *window, const float deltaTime) {
+    if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_NORMAL) {
+        return;
+    }
+
     float cameraSpeed = m_speed * deltaTime;
 
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
@@ -103,5 +107,16 @@ glm::mat4 Camera::getViewMatrix() const {
 }
 
 glm::mat4 Camera::getProjectionMatrix(const float width, const float height) const {
-    return glm::perspective(glm::radians(m_fov), width / height, 0.1f, 1000.0f); // how far we can see
+    return glm::perspective(glm::radians(m_fov), width / height, 0.1f, 4000.0f); // how far we can see
 }
+
+void Camera::setPosition(const glm::vec3 &position) {
+    m_cameraPos = position;
+    updateView();
+}
+
+void Camera::setPosition(float x, float y, float z) {
+    m_cameraPos = glm::vec3(x, y, z);
+    updateView();
+}
+

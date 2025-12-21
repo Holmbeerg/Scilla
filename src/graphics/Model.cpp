@@ -13,7 +13,7 @@ void Model::loadModel(const std::string &path) {
     Assimp::Importer importer;
     // https://the-asset-importer-lib-documentation.readthedocs.io/en/latest/usage/postprocessing.html
     const aiScene *scene = importer.ReadFile(
-        path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace |
+        path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace |
               aiProcess_OptimizeMeshes | aiProcess_OptimizeGraph);
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
@@ -78,19 +78,25 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) const {
 
         material.diffuseMap  = loadMaterialTexture(aiMat, aiTextureType_DIFFUSE, true);
         material.specularMap = loadMaterialTexture(aiMat, aiTextureType_SPECULAR, false);
-
-        // Assimp often puts Normal maps in aiTextureType_HEIGHT
         material.normalMap = loadMaterialTexture(aiMat, aiTextureType_HEIGHT, false);
         if (!material.normalMap) {
-             // Fallback: Check standard normals if height was empty
-             material.normalMap = loadMaterialTexture(aiMat, aiTextureType_NORMALS, false);
+            material.normalMap = loadMaterialTexture(aiMat, aiTextureType_NORMALS, false);
+        }
+        material.armMap = loadMaterialTexture(aiMat, aiTextureType_METALNESS, false);
+        if (!material.armMap) {
+            material.armMap = loadMaterialTexture(aiMat, aiTextureType_UNKNOWN, false);
         }
 
-        // Load Shininess
         if (float shininess; aiMat->Get(AI_MATKEY_SHININESS, shininess) == aiReturn_SUCCESS) {
              material.shininess = shininess;
         }
     }
+
+    std::cout << "Mesh: " << mesh->mName.C_Str() << "\n";
+    std::cout << "  Diffuse: " << (material.diffuseMap ? "y" : "n") << "\n";
+    std::cout << "  Normal: " << (material.normalMap ? "y" : "n") << "\n";
+    std::cout << "  ARM: " << (material.armMap ? "y" : "n") << "\n";
+    std::cout << "  Has UVs: " << (mesh->HasTextureCoords(0) ? "✓" : "n") << "\n";
 
     return {vertices, indices, material};
 }
@@ -98,10 +104,10 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) const {
 std::shared_ptr<Texture> Model::loadMaterialTexture(const aiMaterial *mat, const aiTextureType type, const bool isSRGB) const {
     if (mat->GetTextureCount(type) == 0) return nullptr;
 
-    aiString str;
-    mat->GetTexture(type, 0, &str); // Get only the first texture of this type
+    aiString texturePath;
+    mat->GetTexture(type, 0, &texturePath);
 
-    const std::string fullPath = m_directory + "/" + str.C_Str();
+    const std::string fullPath = m_directory + "/" + texturePath.C_Str();
 
-    return AssetManager::get().loadTexture(fullPath, isSRGB, true);
+    return AssetManager::get().loadTexture(fullPath, isSRGB, false);
 }

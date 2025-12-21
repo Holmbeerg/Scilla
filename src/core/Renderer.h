@@ -10,12 +10,16 @@
 #include "camera/CameraUBO.h"
 #include <memory>
 
+#include "graphics/InstancedModel.h"
+
 
 class Renderer {
 public:
     void initialize();
     void render(Scene& scene, const InputHandler& inputHandler);
-    static void reloadShaders() ;
+
+    void renderInstanced(const InstancedModel& batch, const Shader& shader);
+    void reloadShaders() ;
     void setViewportSize(const int width, const int height) {
         screenWidth = width;
         screenHeight = height;

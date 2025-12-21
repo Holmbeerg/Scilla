@@ -8,7 +8,7 @@ public:
     Texture();
 
     explicit Texture(const std::string &imagePath, std::string typeName, bool isColorData = true, bool flipVertically = true);
-    explicit Texture(const std::string& imagePath, bool isColorData = true, bool flipVertically = true);
+    explicit Texture(const std::string& imagePath, bool isColorData = true, bool flipVertically = false);
 
     ~Texture();
 
@@ -25,7 +25,7 @@ public:
     void setWrapMode(GLint wrapS, GLint wrapT) const;
     void setFilterMode(GLint minFilter = GL_LINEAR_MIPMAP_LINEAR, GLint magFilter = GL_LINEAR) const;
 
-    void loadFromFile(const std::string &imagePath, bool isColorData = true, bool flipVertically = true);
+    void loadFromFile(const std::string &imagePath, bool isColorData = true, bool flipVertically = false);
 
     [[nodiscard]] GLuint getID() const;
     [[nodiscard]] const std::string &getPath() const;

@@ -3,6 +3,7 @@
 
 #include "Scene.h"
 #include <cmath> // For sin/cos
+#include <imgui.h>
 
 #include "AssetManager.h"
 #include "world/Terrain.h"
@@ -12,27 +13,19 @@ Scene::Scene() = default;
 
 void Scene::initialize() {
     auto& assets = AssetManager::get();
-    skybox = std::make_unique<Skybox>();
+    m_skybox = std::make_unique<Skybox>();
 
-    TerrainParams params;
-    params.octaves = 10;
-    params.scale = 1.5f;
-    params.persistence = 0.4f;
-    params.lacunarity = 2.5f;
-    params.heightMultiplier = 180.0f;
-    params.powerCurve = 6.0f;
-    params.baseHeight = -10.f;
+    auto heightData = TerrainGenerator::generateHeights(2048, 2048, m_terrainParams);
+    m_terrain = std::make_unique<Terrain>(2048, 2048, heightData);
 
-    auto heightData = TerrainGenerator::generateHeights(1024, 1024, params);
-    terrain = std::make_unique<Terrain>(1024, 1024, heightData);
+    m_vegetation = std::make_unique<VegetationPlacer>();
+    m_vegetation->generate(*m_terrain, heightData, 2048);
 
-    terrain->m_position = glm::vec3(-128.0f, -10.0f, -128.0f);
-
-    // create some scene objects, e.g., trees
+    m_camera.setPosition(1024.0f, 300.0f, 0.0f);
 }
 
 void Scene::update(const float deltaTime, const InputHandler& inputHandler) {
-    camera.processInput(inputHandler.getWindow(), deltaTime);
+    m_camera.processInput(inputHandler.getWindow(), deltaTime);
 
     m_dayTime += deltaTime * 0.01f;
 
@@ -46,4 +39,38 @@ void Scene::update(const float deltaTime, const InputHandler& inputHandler) {
     m_sunDirection.z = y * std::sin(tilt) * -1.0f;
 
     m_sunDirection = glm::normalize(m_sunDirection);
+}
+
+void Scene::regenerateTerrain() {
+    auto heightData = TerrainGenerator::generateHeights(2048, 2048, m_terrainParams);
+    m_terrain = std::make_unique<Terrain>(2048, 2048, heightData);
+
+    m_vegetation->generate(*m_terrain, heightData, 2048);
+}
+
+void Scene::imGui() {
+    ImGui::Begin("Terrain Tools");
+
+    // Terrain Generation Controls
+    if (ImGui::TreeNode("Shape Generation")) {
+        ImGui::SliderFloat("Scale", &m_terrainParams.noiseScale, 0.001f, 0.1f);
+        ImGui::SliderFloat("Height", &m_terrainParams.heightMultiplier, 10.0f, 500.0f);
+        ImGui::SliderInt("Octaves", &m_terrainParams.octaves, 1, 10);
+        ImGui::SliderFloat("Power", &m_terrainParams.powerCurve, 1.0f, 10.0f);
+
+        if (ImGui::Button("Regenerate Terrain")) {
+            regenerateTerrain();
+        }
+        ImGui::TreePop();
+    }
+
+    // Material & Shader Controls
+    if (ImGui::TreeNode("Material & Shader")) {
+        ImGui::SliderFloat("Grass Limit", &m_terrainMaterial.grassHeight, 0.0f, 50.0f);
+        ImGui::SliderFloat("Rock Limit", &m_terrainMaterial.rockHeight, 0.0f, 100.0f);
+        ImGui::SliderFloat("Snow Limit", &m_terrainMaterial.snowHeight, 50.0f, 200.0f);
+        ImGui::TreePop();
+    }
+
+    ImGui::End();
 }

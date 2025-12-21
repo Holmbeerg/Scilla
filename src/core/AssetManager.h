@@ -32,7 +32,7 @@ public:
     void clear();
 
 private:
-    AssetManager() = default;
+    AssetManager() = default; // Private constructor for singleton
     ~AssetManager() = default;
 
     std::unordered_map<std::string, std::shared_ptr<Texture>> m_textures;

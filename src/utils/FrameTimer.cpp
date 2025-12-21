@@ -17,8 +17,9 @@ void FrameTimer::update() {
 
     if (elapsedTime >= 1.0) {
         if (m_frameCount > 0) {
+            const double fps = m_frameCount;
             const double msPerFrame = 1000.0 / m_frameCount;
-            std::cout << "ms/frame: " << msPerFrame << std::endl;
+            std::cout << "fps: " << fps << " | ms/frame: " << msPerFrame << std::endl;
         }
         m_frameCount = 0;
         elapsedTime -= 1.0;
