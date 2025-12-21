@@ -101,6 +101,36 @@ void Terrain::calculateNormals(std::vector<TerrainVertex>& vertices, const int w
     }
 }
 
+// Bilinear interpolation to get height at (x, z)
+// This works by finding the four nearest heightmap points and interpolating between them
+float Terrain::getHeightAt(const float x, const float z) const {
+    float localX = (x - m_position.x);
+    float localZ = (z - m_position.z);
+
+    if (localX < 0 || localX >= m_worldWidth - 1 || localZ < 0 || localZ >= m_worldWidth - 1) {
+        return -100.0f;
+    }
+
+    int x0 = static_cast<int>(std::floor(localX));
+    int z0 = static_cast<int>(std::floor(localZ));
+    int x1 = x0 + 1;
+    int z1 = z0 + 1;
+
+    float fracX = localX - x0;
+    float fracZ = localZ - z0;
+
+    float h00 = m_heights[z0 * m_worldWidth + x0];
+    float h10 = m_heights[z0 * m_worldWidth + x1];
+    float h01 = m_heights[z1 * m_worldWidth + x0];
+    float h11 = m_heights[z1 * m_worldWidth + x1];
+
+    float h0 = h00 * (1 - fracX) + h10 * fracX;
+    float h1 = h01 * (1 - fracX) + h11 * fracX;
+    float height = h0 * (1 - fracZ) + h1 * fracZ;
+
+    return height + m_position.y;
+}
+
 void Terrain::loadTextures() {
     const std::string texPath = "/home/holmberg/development/Scilla/assets/textures/terrain/";
 

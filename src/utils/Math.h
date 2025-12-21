@@ -1,5 +1,4 @@
 #pragma once
-#include <glm/glm.hpp>
 
 namespace Math {
     inline float inverseLerp(const float min, const float max, const float value) {

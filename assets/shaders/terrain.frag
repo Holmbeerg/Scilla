@@ -86,8 +86,6 @@ Surface blendTerrain(vec3 p, vec3 n) {
     Surface rock  = sampleSurface(rockTexture,  rockNormal,  rockAO,  p, n);
     Surface snow  = sampleSurface(snowTexture,  snowNormal,  snowAO,  p, n);
 
-    float slope = smoothstep(0.2, 0.8, 1.0 - abs(n.y));
-
     float noise = fract(sin(dot(p.xz, vec2(12.9898, 78.233))) * 43758.5453);
     float h = Height + noise * 1.5;
 
@@ -95,9 +93,11 @@ Surface blendTerrain(vec3 p, vec3 n) {
     float snowW  = smoothstep(u_SnowHeight - 2.0, u_SnowHeight + 2.0, h);
     float rockW  = 1.0 - grassW - snowW;
 
+    float slope = smoothstep(0.1, 0.35, 1.0 - n.y);
+
+    rockW = max(rockW, slope);
     grassW *= (1.0 - slope);
     snowW  *= (1.0 - slope);
-    rockW  += slope;
 
     float sum = grassW + rockW + snowW;
     grassW /= sum;

@@ -33,6 +33,8 @@ public:
     };
     Terrain(int worldWidth, int worldDepth, const std::vector<float>& heightMap);
 
+    float getHeightAt(float x, float z) const;
+
     [[nodiscard]] std::vector<TerrainVertex> generateVertices() const;
     [[nodiscard]] std::vector<unsigned int> generateIndices() const;
     void calculateNormals(std::vector<TerrainVertex>& vertices, int worldWidth, int worldDepth) const;

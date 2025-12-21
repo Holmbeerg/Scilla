@@ -1,6 +1,7 @@
 #include "VegetationPlacer.h"
 #include "../core/AssetManager.h"
 #include "../core/Renderer.h"
+#include <world/Terrain.h>
 #include <cstdlib>
 #include <iostream>
 
@@ -29,7 +30,7 @@ void VegetationPlacer::generate(const Terrain &terrain, const std::vector<float>
         float worldX = randomX + terrainPos.x;
         float worldZ = randomZ + terrainPos.z;
 
-        float worldY = getHeightAt(worldX, worldZ, terrain, heightMap, mapWidth);
+        float worldY = terrain.getHeightAt(worldX, worldZ);
 
         float sinkOffset = 3.0f; // hack to prevent floating trees for now
         glm::vec3 worldPos(worldX, worldY - sinkOffset, worldZ);
@@ -54,34 +55,4 @@ void VegetationPlacer::render(Renderer &renderer, const Shader &shader) const {
     if (m_grass) {
         renderer.renderInstanced(*m_grass, shader);
     }
-}
-
-// Bilinear interpolation to get height at (x, z)
-// This works by finding the four nearest heightmap points and interpolating between them
-float VegetationPlacer::getHeightAt(const float x, const float z, const Terrain& terrain, const std::vector<float>& heightMap, const int mapWidth) {
-    float localX = (x - terrain.m_position.x);
-    float localZ = (z - terrain.m_position.z);
-
-    if (localX < 0 || localX >= mapWidth - 1 || localZ < 0 || localZ >= mapWidth - 1) {
-        return -100.0f;
-    }
-
-    int x0 = static_cast<int>(std::floor(localX));
-    int z0 = static_cast<int>(std::floor(localZ));
-    int x1 = x0 + 1;
-    int z1 = z0 + 1;
-
-    float fracX = localX - x0;
-    float fracZ = localZ - z0;
-
-    float h00 = heightMap[z0 * mapWidth + x0];
-    float h10 = heightMap[z0 * mapWidth + x1];
-    float h01 = heightMap[z1 * mapWidth + x0];
-    float h11 = heightMap[z1 * mapWidth + x1];
-
-    float h0 = h00 * (1 - fracX) + h10 * fracX;
-    float h1 = h01 * (1 - fracX) + h11 * fracX;
-    float height = h0 * (1 - fracZ) + h1 * fracZ;
-
-    return height + terrain.m_position.y;
 }
