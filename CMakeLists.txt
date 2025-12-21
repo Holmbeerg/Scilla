@@ -80,6 +80,7 @@ add_executable(scilla
         src/graphics/buffers/InstanceBuffer.h
         src/graphics/InstancedModel.cpp
         src/graphics/InstancedModel.h
+        src/utils/Math.h
 )
 
 target_include_directories(scilla PRIVATE

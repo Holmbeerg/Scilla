@@ -3,6 +3,7 @@
 #include <algorithm>
 #define STB_PERLIN_IMPLEMENTATION
 #include <stb/stb_perlin.h>
+#include <utils/Math.h>
 
 // this generates a heightmap using fractal brownian motion (FBM) based on Perlin noise
 std::vector<float> TerrainGenerator::generateHeights(const int worldWidth, const int worldDepth, const TerrainParams& params) {
@@ -45,14 +46,15 @@ std::vector<float> TerrainGenerator::generateHeights(const int worldWidth, const
     // Pass 2 - Normalize & Apply Height Shaping
     for (int z = 0; z < worldDepth; z++) {
         for (int x = 0; x < worldWidth; x++) {
+            const int index = z * worldWidth + x;
             // 1. Inverse Lerp: Map [min, max] to [0, 1]
-            const float inverseLerp = (heights[z * worldWidth + x] - minNoiseHeight) / (maxNoiseHeight - minNoiseHeight);
+            const float t = Math::inverseLerp(minNoiseHeight, maxNoiseHeight, heights[index]);
 
             // 2. Apply Power Curve (Shaping valleys/peaks)
-            const float shapedHeight = applyPowerCurve(inverseLerp, params.powerCurve);
+            const float shapedHeight = applyPowerCurve(t, params.powerCurve);
 
             // 3. Final Scale
-            heights[z * worldWidth + x] = shapedHeight * params.heightMultiplier;
+            heights[index] = shapedHeight * params.heightMultiplier;
         }
     }
 
